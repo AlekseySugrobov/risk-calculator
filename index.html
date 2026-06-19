@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Калькулятор риска и Журнал</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 650px; margin: 15px auto; padding: 15px 20px; border: 1px solid #ddd; border-radius: 12px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        body { font-family: Arial, sans-serif; max-width: 650px; margin: 15px auto; padding: 15px 20px; border: 1px solid #ddd; border-radius: 120px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: relative; overflow-x: hidden; border-radius: 12px; }
         h2 { margin-top: 0; margin-bottom: 12px; color: #333; text-align: center; font-size: 1.4em; }
         h3 { margin-top: 12px; margin-bottom: 8px; text-align: left; border-bottom: 2px solid #eee; padding-bottom: 3px; font-size: 1.1em; }
         label { display: block; margin-top: 8px; font-weight: bold; color: #555; font-size: 0.9em; }
@@ -70,7 +70,7 @@
         .profit { color: #28a745; font-weight: bold; }
         .loss { color: #dc3545; font-weight: bold; }
         .breakeven { color: #6c757d; font-weight: bold; }
-        .comment-text { text-align: left !important; font-size: 0.85em; color: #555; max-width: 180px; overflow-wrap: break-word; }
+        .comment-text { text-align: left !important; font-size: 0.85em; color: #555; max-width: 150px; overflow-wrap: break-word; }
         .time-text { font-size: 0.85em; color: #777; }
 
         .tabs-header { display: flex; gap: 10px; margin-bottom: 12px; border-bottom: 2px solid #eee; padding-bottom: 6px; }
@@ -78,10 +78,20 @@
         .tab-btn:hover { background-color: #e9ecef; }
         .tab-btn.active { background-color: #007bff; color: white; border-color: #007bff; }
         .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        .tab-content.active { display: block; position: relative; }
 
         .history-scroll-container { max-height: 400px; overflow-y: auto; margin-top: 10px; border: 1px solid #eee; border-radius: 6px; }
         .history-table { margin-top: 0; }
+
+        .btn-edit-row { background: none; border: none; color: #007bff; cursor: pointer; font-size: 1.1em; padding: 0; margin: 0; width: auto; }
+        .btn-del-row { background: none; border: none; color: #dc3545; cursor: pointer; font-size: 1.1em; padding: 0; margin-left: 8px; width: auto; }
+
+        .drawer { position: absolute; top: 0; right: -300px; width: 280px; height: 100%; background: #fff; box-shadow: -5px 0 15px rgba(0,0,0,0.1); transition: right 0.3s ease; z-index: 100; padding: 15px; border-left: 1px solid #ddd; box-sizing: border-box; }
+        .drawer.open { right: 0; }
+        .drawer-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.2); display: none; z-index: 90; }
+        .drawer-overlay.open { display: block; }
+        .drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .btn-close-drawer { background: none; border: none; font-size: 1.5em; cursor: pointer; color: #999; width: auto; padding: 0; margin: 0; }
     </style>
 </head>
 <body>
@@ -98,12 +108,8 @@
             <div class="flex-child">
                 <label>Тип аккаунта:</label>
                 <div class="radio-group">
-                    <label class="radio-label">
-                        <input type="radio" name="accountType" value="challenge" checked onchange="toggleAccountType()"> Challenge
-                    </label>
-                    <label class="radio-label">
-                        <input type="radio" name="accountType" value="funded" onchange="toggleAccountType()"> Funded
-                    </label>
+                    <label class="radio-label"><input type="radio" name="accountType" value="challenge" checked onchange="toggleAccountType()"> Challenge</label>
+                    <label class="radio-label"><input type="radio" name="accountType" value="funded" onchange="toggleAccountType()"> Funded</label>
                 </div>
             </div>
             <div class="flex-child">
@@ -111,7 +117,6 @@
                 <input type="number" id="accountBalance" value="10000" step="0.01">
             </div>
         </div>
-
         <div class="flex-container">
             <div class="flex-child">
                 <label for="drawdownLeft">Остаток до drawdown ($):</label>
@@ -122,7 +127,6 @@
                 <input type="number" id="maxDrawdown" value="500" step="0.01">
             </div>
         </div>
-
         <div class="flex-container">
             <div class="flex-child">
                 <label for="trades1">Сделок (Сц. 1):</label>
@@ -133,33 +137,15 @@
                 <input type="number" id="trades2" value="6">
             </div>
         </div>
-
         <button class="btn-calc" onclick="calculateRiskOnly()">Рассчитать риски</button>
-
         <table class="result-table" id="resultTable" style="display: none;">
-            <thead>
-                <tr>
-                    <th>Сценарий</th>
-                    <th>Сделок</th>
-                    <th>Риск на сделку</th>
-                </tr>
-            </thead>
+            <thead><tr><th>Сценарий</th><th>Сделок</th><th>Риск на сделку</th></tr></thead>
             <tbody>
-                <tr>
-                    <td>Вариант 1</td>
-                    <td id="resTrades1">4</td>
-                    <td id="risk1" class="highlight">$0</td>
-                </tr>
-                <tr>
-                    <td>Вариант 2</td>
-                    <td id="resTrades2">6</td>
-                    <td id="risk2" class="highlight">$0</td>
-                </tr>
+                <tr><td>Вариант 1</td><td id="resTrades1">4</td><td id="risk1" class="highlight">$0</td></tr>
+                <tr><td>Вариант 2</td><td id="resTrades2">6</td><td id="risk2" class="highlight">$0</td></tr>
             </tbody>
         </table>
-
         <h3>Добавить сделку в журнал</h3>
-        
         <div class="flex-container">
             <div class="flex-child">
                 <label for="chosenScenario">Подставить риск из:</label>
@@ -173,7 +159,6 @@
                 <input type="number" id="actualRisk" value="0" step="0.01">
             </div>
         </div>
-
         <div class="flex-container">
             <div class="flex-child">
                 <label for="tradeResult">Результат сделки:</label>
@@ -184,244 +169,7 @@
                 </select>
             </div>
             <div class="flex-child" id="rewardRatioBox">
-                <label for="rewardRatio">Коэффициент прибыли (R:R):</label>
+                <label for="rewardRatio">R:R:</label>
                 <input type="number" id="rewardRatio" value="1" min="0.1" step="0.1">
             </div>
-            <div class="flex-child" id="breakevenAmountBox" style="display: none;">
-                <label for="beAmount">Сумма результата ($):</label>
-                <input type="number" id="beAmount" value="0" step="0.01">
-            </div>
-        </div>
-
-        <label for="tradeComment">Комментарий к сделке:</label>
-        <textarea id="tradeComment" placeholder="Например: Вход от локального уровня..."></textarea>
-
-        <button class="btn-add" onclick="addTrade()">Зафиксировать сделку в журнал</button>
-    </div>
-
-    <div id="historyTab" class="tab-content">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
-            <h3 style="margin: 0; border: none; padding: 0;">История сделок</h3>
-            <button class="btn-clear" onclick="clearHistory()">Очистить журнал</button>
-        </div>
-        
-        <div class="history-scroll-container">
-            <table class="history-table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Дата / Время</th>
-                        <th>Риск</th>
-                        <th>Результат</th>
-                        <th>Изменение ($)</th>
-                        <th>Комментарий</th>
-                    </tr>
-                </thead>
-                <tbody id="historyBody"></tbody>
-            </table>
-        </div>
-    </div>
-
-    <script>
-        let calcRisk1 = 0;
-        let calcRisk2 = 0;
-        let tradeHistory = [];
-
-        window.onload = function() {
-            if (localStorage.getItem('accountType')) {
-                const savedType = localStorage.getItem('accountType');
-                document.querySelector(`input[name="accountType"][value="${savedType}"]`).checked = true;
-            }
-            if (localStorage.getItem('accountBalance')) {
-                document.getElementById('accountBalance').value = localStorage.getItem('accountBalance');
-            }
-            if (localStorage.getItem('drawdownLeft')) {
-                document.getElementById('drawdownLeft').value = localStorage.getItem('drawdownLeft');
-            }
-            if (localStorage.getItem('maxDrawdown')) {
-                document.getElementById('maxDrawdown').value = localStorage.getItem('maxDrawdown');
-            }
-            if (localStorage.getItem('trades1')) {
-                document.getElementById('trades1').value = localStorage.getItem('trades1');
-            }
-            if (localStorage.getItem('trades2')) {
-                document.getElementById('trades2').value = localStorage.getItem('trades2');
-            }
-            if (localStorage.getItem('tradeHistory')) {
-                tradeHistory = JSON.parse(localStorage.getItem('tradeHistory'));
-            }
-            toggleAccountType();
-            calculateRiskOnly();
-            renderHistory();
-        };
-
-        function switchTab(tabId, btn) {
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            
-            document.getElementById(tabId).classList.add('active');
-            btn.classList.add('active');
-        }
-
-        function toggleAccountType() {
-            const accountType = document.querySelector('input[name="accountType"]:checked').value;
-            const maxDrawdownBox = document.getElementById('maxDrawdownBox');
-            
-            if (accountType === 'challenge') {
-                maxDrawdownBox.style.display = 'block';
-            } else {
-                maxDrawdownBox.style.display = 'none';
-            }
-            localStorage.setItem('accountType', accountType);
-        }
-
-        function toggleResultInputs() {
-            const resultType = document.getElementById('tradeResult').value;
-            const ratioBox = document.getElementById('rewardRatioBox');
-            const beBox = document.getElementById('breakevenAmountBox');
-            if (ratioBox && beBox) {
-                ratioBox.style.display = resultType === 'win' ? 'block' : 'none';
-                beBox.style.display = resultType === 'be' ? 'block' : 'none';
-            }
-        }
-
-        function updateActualRiskInput() {
-            const scenario = document.getElementById('chosenScenario').value;
-            const actualRiskInput = document.getElementById('actualRisk');
-            if (actualRiskInput) {
-                actualRiskInput.value = scenario === "1" ? calcRisk1.toFixed(2) : calcRisk2.toFixed(2);
-            }
-        }
-
-        function calculateRiskOnly() {
-            const drawdownLeft = parseFloat(document.getElementById('drawdownLeft').value) || 0;
-            const trades1 = parseInt(document.getElementById('trades1').value) || 4;
-            const trades2 = parseInt(document.getElementById('trades2').value) || 6;
-
-            calcRisk1 = drawdownLeft / trades1;
-            calcRisk2 = drawdownLeft / trades2;
-
-            localStorage.setItem('accountBalance', parseFloat(document.getElementById('accountBalance').value) || 0);
-            localStorage.setItem('drawdownLeft', drawdownLeft);
-            localStorage.setItem('maxDrawdown', parseFloat(document.getElementById('maxDrawdown').value) || 0);
-            localStorage.setItem('trades1', trades1);
-            localStorage.setItem('trades2', trades2);
-
-            document.getElementById('resTrades1').innerText = trades1;
-            document.getElementById('resTrades2').innerText = trades2;
-            document.getElementById('risk1').innerText = `$${calcRisk1.toFixed(2)}`;
-            document.getElementById('risk2').innerText = `$${calcRisk2.toFixed(2)}`;
-            document.getElementById('resultTable').style.display = 'table';
-
-            updateActualRiskInput();
-        }
-
-        function addTrade() {
-            const drawdownLeftInput = document.getElementById('drawdownLeft');
-            const balanceInput = document.getElementById('accountBalance');
-            
-            let drawdownLeft = parseFloat(drawdownLeftInput.value) || 0;
-            let accountBalance = parseFloat(balanceInput.value) || 0;
-            
-            const accountType = document.querySelector('input[name="accountType"]:checked').value;
-            const maxDrawdown = parseFloat(document.getElementById('maxDrawdown').value) || 0;
-            
-            const result = document.getElementById('tradeResult').value;
-            const ratio = parseFloat(document.getElementById('rewardRatio').value) || 1;
-            const beAmount = parseFloat(document.getElementById('beAmount').value) || 0;
-            const userRisk = parseFloat(document.getElementById('actualRisk').value) || 0;
-            const commentInput = document.getElementById('tradeComment');
-            const comment = commentInput.value.trim() || "—";
-
-            if (userRisk <= 0 && result !== 'be') {
-                alert("Укажите сумму фактического риска (больше 0)");
-                return;
-            }
-            
-            let changeUSD = 0;
-            let resultText = '';
-            let statusClass = '';
-
-            if (result === 'win') {
-                changeUSD = userRisk * ratio;
-                resultText = 'Выигрыш';
-                statusClass = 'profit';
-            } else if (result === 'lose') {
-                changeUSD = -userRisk;
-                resultText = 'Проигрыш';
-                statusClass = 'loss';
-            } else if (result === 'be') {
-                changeUSD = beAmount;
-                statusClass = 'breakeven';
-                if (beAmount > 0) resultText = `БУ (+${beAmount}$)`;
-                else if (beAmount < 0) resultText = `БУ (${beAmount}$)`;
-                else resultText = 'Безубыток';
-            }
-
-            accountBalance += changeUSD;
-            drawdownLeft += changeUSD;
-
-            if (accountType === 'challenge' && drawdownLeft > maxDrawdown) {
-                drawdownLeft = maxDrawdown;
-            }
-
-            balanceInput.value = accountBalance.toFixed(2);
-            drawdownLeftInput.value = drawdownLeft.toFixed(2);
-            
-            calculateRiskOnly();
-
-            const now = new Date();
-            const timeString = now.toLocaleDateString('ru-RU') + ' ' + now.toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'});
-
-            const newTrade = {
-                time: timeString,
-                risk: userRisk.toFixed(2),
-                result: resultText,
-                change: changeUSD.toFixed(2),
-                comment: comment,
-                statusClass: statusClass
-            };
-
-            tradeHistory.push(newTrade);
-            localStorage.setItem('tradeHistory', JSON.stringify(tradeHistory));
-            commentInput.value = '';
-            
-            renderHistory();
-        }
-
-        function renderHistory() {
-            const body = document.getElementById('historyBody');
-            if (!body) return;
-            
-            body.innerHTML = '';
-            
-            for (let i = tradeHistory.length - 1; i >= 0; i--) {
-                const trade = tradeHistory[i];
-                const tr = document.createElement('tr');
-                
-                let changeStyle = 'breakeven';
-                if (parseFloat(trade.change) > 0) changeStyle = 'profit';
-                if (parseFloat(trade.change) < 0) changeStyle = 'loss';
-
-                tr.innerHTML = `
-                    <td>${i + 1}</td>
-                    <td class="time-text">${trade.time}</td>
-                    <td>$${trade.risk}</td>
-                    <td class="${trade.statusClass || ''}">${trade.result}</td>
-                    <td class="${changeStyle}">${parseFloat(trade.change) > 0 ? '+' : ''}$${trade.change}</td>
-                    <td class="comment-text">${trade.comment}</td>
-                `;
-                body.appendChild(tr);
-            }
-        }
-
-        function clearHistory() {
-            if (confirm("Вы уверены, что хотите очистить весь журнал сделок?")) {
-                tradeHistory = [];
-                localStorage.removeItem('tradeHistory');
-                renderHistory();
-            }
-        }
-    </script>
-</body>
-</html>
+            <div class="flex-child" id="breakevenAmountBox" style="display: none
