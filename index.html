@@ -3,102 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Калькулятор риска и Журнал</title>
+    <title>RiskManager PRO</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 650px; margin: 15px auto; padding: 15px 20px; border: 1px solid #ddd; border-radius: 12px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: relative; overflow: hidden; box-sizing: border-box; }
-        h2 { margin-top: 0; margin-bottom: 12px; color: #333; text-align: center; font-size: 1.4em; }
-        h3 { margin-top: 12px; margin-bottom: 8px; text-align: left; border-bottom: 2px solid #eee; padding-bottom: 3px; font-size: 1.1em; }
-        label { display: block; margin-top: 8px; font-weight: bold; color: #555; font-size: 0.9em; }
-        
-        input[type="number"], select { 
-            width: 100%; 
-            height: 36px; 
-            padding: 0 10px; 
-            margin-top: 3px; 
-            box-sizing: border-box; 
-            border: 1px solid #ccc; 
-            border-radius: 6px; 
-            font-size: 0.95em; 
-            font-family: Arial, sans-serif;
-            background-color: #fff;
-            color: #333;
-            outline: none;
-            transition: border-color 0.2s;
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --success: #10b981;
+            --success-bg: #ecfdf5;
+            --success-text: #065f46;
+            --danger: #ef4444;
+            --danger-bg: #fef2f2;
+            --danger-text: #991b1b;
+            --neutral: #6b7280;
+            --neutral-bg: #f3f4f6;
+            --neutral-text: #374151;
+            --bg-main: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #4b5563;
+            --border: #e5e7eb;
+            --radius: 12px;
         }
 
-        textarea {
-            width: 100%;
-            padding: 8px 10px;
-            margin-top: 3px;
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            max-width: 680px; 
+            margin: 30px auto; 
+            padding: 24px; 
+            border-radius: 16px; 
+            background-color: var(--bg-main); 
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05); 
+            position: relative; 
+            overflow: hidden; 
             box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 0.95em;
-            font-family: Arial, sans-serif;
-            background-color: #fff;
-            color: #333;
-            outline: none;
-            transition: border-color 0.2s;
-            resize: vertical; 
-            height: 48px;
+            color: var(--text-main);
+            line-height: 1.5;
         }
 
-        input[type="number"]:focus, select:focus, textarea:focus {
-            border-color: #007bff;
-        }
+        h2 { margin-top: 0; margin-bottom: 20px; color: var(--text-main); text-align: center; font-size: 1.6em; font-weight: 700; letter-spacing: -0.025em; }
+        h3 { margin-top: 24px; margin-bottom: 12px; text-align: left; font-size: 1.2em; font-weight: 600; color: var(--text-main); letter-spacing: -0.01em; }
+        label { display: block; margin-top: 12px; font-weight: 500; color: var(--text-muted); font-size: 0.85em; }
         
-        .radio-group { display: flex; gap: 15px; height: 36px; margin-top: 3px; background: #f8f9fa; padding: 0 12px; border-radius: 6px; border: 1px solid #eee; align-items: center; box-sizing: border-box; }
-        .radio-label { display: flex; align-items: center; gap: 6px; margin-top: 0; font-weight: normal; cursor: pointer; color: #333; font-size: 0.95em; }
-        .radio-label input { width: auto; margin-top: 0; cursor: pointer; }
+        input[type="number"], select, textarea { 
+            width: 100%; 
+            height: 42px; 
+            padding: 0 14px; 
+            margin-top: 4px; 
+            box-sizing: border-box; 
+            border: 1px solid var(--border); 
+            border-radius: var(--radius); 
+            font-size: 0.95em; 
+            background-color: #fff;
+            color: var(--text-main);
+            outline: none;
+            transition: all 0.2s ease;
+        }
+        textarea { padding: 10px 14px; resize: vertical; height: 60px; }
+        input[type="number"]:focus, select:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
 
-        .flex-container { display: flex; gap: 12px; }
+        /* Переключатель аккаунтов (Пилл-табы) */
+        .account-switch { display: flex; background: var(--neutral-bg); padding: 4px; border-radius: var(--radius); margin-top: 4px; height: 42px; box-sizing: border-box; }
+        .account-switch label { width: 50%; text-align: center; margin: 0; padding: 6px 0; cursor: pointer; border-radius: calc(var(--radius) - 2px); font-size: 0.9em; font-weight: 600; color: var(--text-muted); transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+        .account-switch input { display: none; }
+        .account-switch label:has(input:checked) { background: #fff; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+        .flex-container { display: flex; gap: 16px; }
         .flex-child { flex: 1; min-width: 0; }
         
-        button { width: 100%; padding: 10px; margin-top: 12px; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.95em; font-weight: bold; }
-        .btn-calc { background-color: #007bff; }
-        .btn-calc:hover { background-color: #0056b3; }
-        .btn-add { background-color: #28a745; margin-top: 12px; }
-        .btn-add:hover { background-color: #218838; }
-        .btn-clear { background-color: #dc3545; padding: 5px 10px; font-size: 0.8em; width: auto; margin: 0; }
-        .btn-clear:hover { background-color: #bd2130; }
+        button { width: 100%; padding: 12px; margin-top: 16px; color: white; border: none; border-radius: var(--radius); cursor: pointer; font-size: 0.95em; font-weight: 600; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn-calc { background-color: var(--primary); }
+        .btn-calc:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
+        .btn-calc:active { transform: translateY(0); }
+        .btn-add { background-color: #10b981; }
+        .btn-add:hover { background-color: #059669; transform: translateY(-1px); }
+        .btn-clear { background-color: #f3f4f6; color: var(--danger); font-size: 0.85em; width: auto; margin: 0; padding: 6px 12px; }
+        .btn-clear:hover { background-color: var(--danger-bg); }
         
-        .result-table, .history-table { width: 100%; margin-top: 12px; border-collapse: collapse; }
-        .result-table th, .result-table td, .history-table th, .history-table td { border: 1px solid #eee; padding: 8px; text-align: center; font-size: 0.9em; }
-        .result-table th, .history-table th { background-color: #f8f9fa; color: #666; position: sticky; top: 0; z-index: 10; }
-        
-        .highlight { color: #dc3545; font-weight: bold; font-size: 1em; }
-        .profit { color: #28a745; font-weight: bold; }
-        .loss { color: #dc3545; font-weight: bold; }
-        .breakeven { color: #6c757d; font-weight: bold; }
-        .comment-text { text-align: left !important; font-size: 0.85em; color: #555; max-width: 150px; overflow-wrap: break-word; }
-        .time-text { font-size: 0.85em; color: #777; }
+        /* Карточки сценариев вместо скучной таблицы */
+        .scenario-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+        .scenario-card { background: var(--neutral-bg); padding: 14px; border-radius: var(--radius); border: 1px solid var(--border); text-align: center; transition: all 0.2s; }
+        .scenario-card.active { border-color: var(--primary); background: #f5f3ff; }
+        .scenario-card .sc-title { font-size: 0.8em; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+        .scenario-card .sc-value { font-size: 1.4em; font-weight: 700; color: var(--primary); margin-top: 4px; }
+        .scenario-card .sc-sub { font-size: 0.8em; color: var(--neutral); margin-top: 2px; }
 
-        .tabs-header { display: flex; gap: 10px; margin-bottom: 12px; border-bottom: 2px solid #eee; padding-bottom: 6px; }
-        .tab-btn { flex: 1; padding: 8px; font-size: 0.95em; font-weight: bold; background-color: #f8f9fa; color: #555; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
-        .tab-btn:hover { background-color: #e9ecef; }
-        .tab-btn.active { background-color: #007bff; color: white; border-color: #007bff; }
+        /* Вкладки (Главные табы) */
+        .tabs-header { display: flex; gap: 8px; margin-bottom: 20px; background: var(--neutral-bg); padding: 4px; border-radius: var(--radius); }
+        .tab-btn { flex: 1; padding: 8px; font-size: 0.9em; font-weight: 600; background: transparent; color: var(--text-muted); margin: 0; border-radius: calc(var(--radius) - 2px); }
+        .tab-btn:hover { color: var(--text-main); }
+        .tab-btn.active { background-color: #fff; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        .history-scroll-container { max-height: 400px; overflow-y: auto; margin-top: 10px; border: 1px solid #eee; border-radius: 6px; }
-        .history-table { margin-top: 0; }
+        /* Стилизация Истории Сделок */
+        .history-scroll-container { max-height: 380px; overflow-y: auto; margin-top: 12px; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+        .history-table { width: 100%; border-collapse: collapse; margin-top: 0; }
+        .history-table th { background-color: #fafafa; color: var(--text-muted); font-weight: 600; font-size: 0.8em; text-transform: uppercase; letter-spacing: 0.05em; padding: 12px 8px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
+        .history-table td { padding: 12px 8px; text-align: center; font-size: 0.9em; border-bottom: 1px solid var(--border); color: var(--text-main); vertical-align: middle; }
+        .history-table tr:last-child td { border-bottom: none; }
+        
+        /* Красивые бейджи для статусов сделок */
+        .badge { display: inline-flex; align-items: center; justify-content: center; padding: 4px 8px; border-radius: 20px; font-size: 0.8em; font-weight: 600; min-width: 80px; }
+        .badge.profit { background-color: var(--success-bg); color: var(--success-text); }
+        .badge.loss { background-color: var(--danger-bg); color: var(--danger-text); }
+        .badge.breakeven { background-color: var(--neutral-bg); color: var(--neutral-text); }
+        
+        .val-profit { color: var(--success); font-weight: 600; }
+        .val-loss { color: var(--danger); font-weight: 600; }
+        .val-neutral { color: var(--neutral); font-weight: 600; }
 
-        .btn-edit-row { background: none; border: none; color: #007bff; cursor: pointer; font-size: 1.1em; padding: 0; margin: 0; width: auto; }
-        .btn-del-row { background: none; border: none; color: #dc3545; cursor: pointer; font-size: 1.1em; padding: 0; margin-left: 8px; width: auto; }
+        .comment-text { text-align: left !important; font-size: 0.85em; color: var(--text-muted); max-width: 140px; overflow-wrap: break-word; white-space: normal; }
+        .time-text { font-size: 0.8em; color: var(--neutral); }
 
-        .drawer-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); display: none; z-index: 90; }
+        .btn-edit-row { background: none; border: none; color: var(--primary); cursor: pointer; font-size: 1.1em; padding: 4px; margin: 0; width: auto; transition: opacity 0.2s; }
+        .btn-del-row { background: none; border: none; color: var(--neutral); cursor: pointer; font-size: 1.2em; padding: 4px; margin-left: 4px; width: auto; transition: color 0.2s; }
+        .btn-edit-row:hover { opacity: 0.7; }
+        .btn-del-row:hover { color: var(--danger); }
+
+        /* ПРЕМИАЛЬНЫЙ DRAWER С ПЛАВНЫМ ВЫЕЗДОМ И БЛЮРОМ ЗАДНИКА */
+        .drawer-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.15); backdrop-filter: blur(4px); display: none; z-index: 90; }
         .drawer-overlay.open { display: block; }
         
-        .drawer { position: absolute; top: 0; right: -320px; width: 290px; height: 100%; background: #fff; box-shadow: -5px 0 15px rgba(0,0,0,0.1); transition: right 0.3s ease-in-out; z-index: 100; padding: 15px; border-left: 1px solid #ddd; box-sizing: border-box; display: block; visibility: hidden; }
+        .drawer { position: absolute; top: 0; right: -340px; width: 310px; height: 100%; background: #fff; box-shadow: -10px 0 30px rgba(0,0,0,0.08); transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 100; padding: 24px; border-left: 1px solid var(--border); box-sizing: border-box; display: block; visibility: hidden; }
         .drawer.open { right: 0; visibility: visible; }
         
-        .drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .btn-close-drawer { background: none; border: none; font-size: 1.5em; cursor: pointer; color: #999; width: auto; padding: 0; margin: 0; }
+        .drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        .btn-close-drawer { background: none; border: none; font-size: 1.4em; cursor: pointer; color: var(--neutral); width: auto; padding: 0; margin: 0; }
+        .btn-close-drawer:hover { color: var(--text-main); }
     </style>
 </head>
 <body>
 
-    <h2>Риск-менеджер и Журнал</h2>
+    <h2>RiskManager PRO</h2>
 
     <div class="tabs-header">
         <button class="tab-btn active" onclick="switchTab('calcTab', this)">Калькулятор и Вход</button>
@@ -108,90 +143,103 @@
     <div id="calcTab" class="tab-content active">
         <div class="flex-container">
             <div class="flex-child">
-                <label>Тип аккаунта:</label>
-                <div class="radio-group">
-                    <label class="radio-label"><input type="radio" name="accountType" value="challenge" checked onchange="toggleAccountType()"> Challenge</label>
-                    <label class="radio-label"><input type="radio" name="accountType" value="funded" onchange="toggleAccountType()"> Funded</label>
+                <label>Тип аккаунта</label>
+                <div class="account-switch">
+                    <label><input type="radio" name="accountType" value="challenge" checked onchange="toggleAccountType()">Challenge</label>
+                    <label><input type="radio" name="accountType" value="funded" onchange="toggleAccountType()">Funded</label>
                 </div>
             </div>
             <div class="flex-child">
-                <label for="accountBalance">Текущий баланс ($):</label>
+                <label for="accountBalance">Текущий баланс ($)</label>
                 <input type="number" id="accountBalance" value="10000" step="0.01">
             </div>
         </div>
         <div class="flex-container">
             <div class="flex-child">
-                <label for="drawdownLeft">Остаток до drawdown ($):</label>
+                <label for="drawdownLeft">Остаток до drawdown ($)</label>
                 <input type="number" id="drawdownLeft" value="500" step="0.01">
             </div>
             <div class="flex-child" id="maxDrawdownBox">
-                <label for="maxDrawdown">Макс. Drawdown ($):</label>
+                <label for="maxDrawdown">Макс. Drawdown ($)</label>
                 <input type="number" id="maxDrawdown" value="500" step="0.01">
             </div>
         </div>
         <div class="flex-container">
             <div class="flex-child">
-                <label for="trades1">Сделок (Сц. 1):</label>
+                <label for="trades1">Сделок (Сценарий 1)</label>
                 <input type="number" id="trades1" value="4">
             </div>
             <div class="flex-child">
-                <label for="trades2">Сделок (Сц. 2):</label>
+                <label for="trades2">Сделок (Сценарий 2)</label>
                 <input type="number" id="trades2" value="6">
             </div>
         </div>
-        <button class="btn-calc" onclick="calculateRiskOnly()">Рассчитать риски</button>
-        <table class="result-table" id="resultTable" style="display: none;">
-            <thead><tr><th>Сценарий</th><th>Сделок</th><th>Риск на сделку</th></tr></thead>
-            <tbody>
-                <tr><td>Вариант 1</td><td id="resTrades1">4</td><td id="risk1" class="highlight">$0</td></tr>
-                <tr><td>Вариант 2</td><td id="resTrades2">6</td><td id="risk2" class="highlight">$0</td></tr>
-            </tbody>
-        </table>
-        <h3>Добавить сделку в журнал</h3>
+        <button class="btn-calc" onclick="calculateRiskOnly()">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM4 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/><path d="M4 2.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h7a.5.5 0 0 1-.5-.5zm2 5.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm0 2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm2.5-2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm0 2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm2.5-2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm0 2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5z"/></svg>
+            Рассчитать риски
+        </button>
+        
+        <div class="scenario-cards" id="scenarioWrapper" style="display: none;">
+            <div class="scenario-card" id="cardSc1">
+                <div class="sc-title">Вариант 1</div>
+                <div class="sc-value" id="riskCard1">$0.00</div>
+                <div class="sc-sub" id="subCard1">на 4 сделки</div>
+            </div>
+            <div class="scenario-card" id="cardSc2">
+                <div class="sc-title">Вариант 2</div>
+                <div class="sc-value" id="riskCard2">$0.00</div>
+                <div class="sc-sub" id="subCard2">на 6 сделок</div>
+            </div>
+        </div>
+
+        <h3>Новая сделка</h3>
         <div class="flex-container">
             <div class="flex-child">
-                <label for="chosenScenario">Подставить риск из:</label>
+                <label for="chosenScenario">Подставить риск из</label>
                 <select id="chosenScenario" onchange="updateActualRiskInput()">
                     <option value="1">Сценария 1</option>
                     <option value="2">Сценария 2</option>
                 </select>
             </div>
             <div class="flex-child">
-                <label for="actualRisk">Фактический риск ($):</label>
+                <label for="actualRisk">Фактический риск ($)</label>
                 <input type="number" id="actualRisk" value="0" step="0.01">
             </div>
         </div>
         <div class="flex-container">
             <div class="flex-child">
-                <label for="tradeResult">Результат сделки:</label>
+                <label for="tradeResult">Результат сделки</label>
                 <select id="tradeResult" onchange="toggleResultInputs()">
-                    <option value="win">Выиграл (Take Profit)</option>
-                    <option value="lose">Проиграл (Stop Loss)</option>
+                    <option value="win">Выигрыш (Take Profit)</option>
+                    <option value="lose">Проигрыш (Stop Loss)</option>
                     <option value="be">Безубыток</option>
                 </select>
             </div>
             <div class="flex-child" id="rewardRatioBox">
-                <label for="rewardRatio">R:R:</label>
+                <label for="rewardRatio">R:R</label>
                 <input type="number" id="rewardRatio" value="1" min="0.1" step="0.1">
             </div>
             <div class="flex-child" id="breakevenAmountBox" style="display: none;">
-                <label for="beAmount">Сумма ($):</label>
+                <label for="beAmount">Сумма ($)</label>
                 <input type="number" id="beAmount" value="0" step="0.01">
             </div>
         </div>
-        <label for="tradeComment">Комментарий к сделке:</label>
-        <textarea id="tradeComment" placeholder="Например: Вход от локального уровня..."></textarea>
-        <button class="btn-add" onclick="addTrade()">Зафиксировать сделку в журнал</button>
+        <label for="tradeComment">Комментарий к сделке</label>
+        <textarea id="tradeComment" placeholder="Контекст входа, паттерн или эмоции..."></textarea>
+        <button class="btn-add" onclick="addTrade()">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 "></svg>
+            Зафиксировать в журнал
+        </button>
     </div>
 
     <div id="historyTab" class="tab-content">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
-            <h3 style="margin: 0; border: none; padding: 0;">История сделок</h3>
-            <button class="btn-clear" onclick="clearHistory()">Очистить</button>
+            <h3 style="margin: 0;">История сделок</h3>
+            <button class="btn-clear" onclick="clearHistory()">Очистить журнал</button>
         </div>
         <div class="history-scroll-container">
             <table class="history-table">
-                <thead><tr><th>#</th><th>Дата</th><th>Риск</th><th>Рез.</th><th>Изм. ($)</th><th>Коммент.</th><th></th></tr></thead>
+                <thead><tr><th>#</th><th>Дата/Время</th><th>Риск</th><th>Результат</th><th>Изм. ($)</th><th>Коммент.</th><th></th></tr></thead>
                 <tbody id="historyBody"></tbody>
             </table>
         </div>
@@ -200,15 +248,15 @@
     <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
     <div class="drawer" id="editDrawer">
         <div class="drawer-header">
-            <h3 style="margin:0; border:none; padding-bottom:0;">Ред. сделки</h3>
+            <h3 style="margin:0; font-size:1.3em;">Редактирование</h3>
             <button class="btn-close-drawer" onclick="closeDrawer()">&times;</button>
         </div>
         <input type="hidden" id="editTradeIndex">
         
-        <label>Риск ($):</label>
+        <label>Риск ($)</label>
         <input type="number" id="editRisk" step="0.01">
         
-        <label>Результат:</label>
+        <label>Результат</label>
         <select id="editResult" onchange="toggleEditResultInputs()">
             <option value="win">Выигрыш</option>
             <option value="lose">Проиграл</option>
@@ -216,18 +264,18 @@
         </select>
         
         <div id="editRRBox">
-            <label>R:R:</label>
+            <label>R:R</label>
             <input type="number" id="editRR" step="0.1">
         </div>
         <div id="editBEBox" style="display:none;">
-            <label>Сумма результата ($):</label>
+            <label>Сумма результата ($)</label>
             <input type="number" id="editBE" step="0.01">
         </div>
         
-        <label>Комментарий:</label>
+        <label>Комментарий</label>
         <textarea id="editComment"></textarea>
         
-        <button class="btn-calc" style="background-color:#28a745" onclick="saveEditedTrade()">Сохранить</button>
+        <button class="btn-calc" style="background-color: #10b981; margin-top: 24px;" onclick="saveEditedTrade()">Сохранить изменения</button>
     </div>
 
     <script>
@@ -282,9 +330,14 @@
                 let el = document.getElementById(id);
                 if(el) localStorage.setItem(id, el.value);
             });
-            document.getElementById('resTrades1').innerText = t1; document.getElementById('resTrades2').innerText = t2;
-            document.getElementById('risk1').innerText = `$${calcRisk1.toFixed(2)}`; document.getElementById('risk2').innerText = `$${calcRisk2.toFixed(2)}`;
-            document.getElementById('resultTable').style.display = 'table'; updateActualRiskInput();
+            
+            document.getElementById('riskCard1').innerText = `$${calcRisk1.toFixed(2)}`;
+            document.getElementById('subCard1').innerText = `на ${t1} сделок`;
+            document.getElementById('riskCard2').innerText = `$${calcRisk2.toFixed(2)}`;
+            document.getElementById('subCard2').innerText = `на ${t2} сделок`;
+            
+            document.getElementById('scenarioWrapper').style.display = 'grid'; 
+            updateActualRiskInput();
         }
 
         function addTrade() {
@@ -340,24 +393,27 @@
                 let realIdx = tradeHistory.length - 1 - i;
                 let tr = document.createElement('tr');
                 let changeNum = parseFloat(t.change) || 0;
-                let cls = changeNum > 0 ? 'profit' : (changeNum < 0 ? 'loss' : 'breakeven');
                 
-                let displayRes = 'Безубыток';
-                if (t.resultType === 'win' || t.resultType === 'Выигрыш') displayRes = 'Выигрыш';
-                if (t.resultType === 'lose' || t.resultType === 'Проиграл' || t.resultType === 'Проиграш') displayRes = 'Проиграл';
+                let bCls = 'breakeven'; let vCls = 'val-neutral'; let displayRes = 'Безубыток';
+                if (t.resultType === 'win' || t.resultType === 'Выигрыш') { bCls = 'profit'; vCls = 'val-profit'; displayRes = 'Выигрыш'; }
+                if (t.resultType === 'lose' || t.resultType === 'Проиграл' || t.resultType === 'Проиграш') { bCls = 'loss'; vCls = 'val-loss'; displayRes = 'Проиграл'; }
                 
                 tr.innerHTML = `
-                    <td>${realIdx + 1}</td><td class="time-text">${t.time}</td>
-                    <td>$${parseFloat(t.risk).toFixed(2)}</td><td class="${cls}">${displayRes}</td>
-                    <td class="${cls}">${changeNum > 0 ? '+' : ''}$${changeNum.toFixed(2)}</td>
+                    <td>${realIdx + 1}</td>
+                    <td class="time-text">${t.time}</td>
+                    <td>$${parseFloat(t.risk).toFixed(2)}</td>
+                    <td><span class="badge ${bCls}">${displayRes}</span></td>
+                    <td class="${vCls}">${changeNum > 0 ? '+' : ''}$${changeNum.toFixed(2)}</td>
                     <td class="comment-text">${t.comment}</td>
-                    <td><button class="btn-edit-row" onclick="openDrawer(${realIdx})">✏️</button><button class="btn-del-row" onclick="deleteTrade(${realIdx})">&times;</button></td>
+                    <td>
+                        <button class="btn-edit-row" onclick="openDrawer(${realIdx})">✏️</button>
+                        <button class="btn-del-row" onclick="deleteTrade(${realIdx})">&times;</button>
+                    </td>
                 `;
                 body.appendChild(tr);
             });
         }
 
-        // ЖЕСТКАЯ НАДЁЖНАЯ СИНХРОНИЗАЦИЯ С ЛЮБЫМ СТАРАМ ФОРМАТОМ ДАННЫХ
         function openDrawer(idx) {
             let t = tradeHistory[idx];
             document.getElementById('editTradeIndex').value = idx;
@@ -373,7 +429,6 @@
             
             let chg = parseFloat(t.change) || 0;
             
-            // Если старые данные не сохранили R:R, вычисляем его математически (Профит / Риск)
             if (normType === 'win') {
                 let calculatedRR = t.rr ? parseFloat(t.rr) : (rsk > 0 ? chg / rsk : 1);
                 document.getElementById('editRR').value = isNaN(calculatedRR) ? 1 : calculatedRR.toFixed(1);
@@ -414,7 +469,7 @@
             tradeHistory[idx] = {
                 ...tradeHistory[idx],
                 risk: risk.toFixed(2),
-                resultType: res, // Сохраняем чистый системный маркер (win/lose/be)
+                resultType: res,
                 rr: res === 'win' ? parseFloat(rrValue).toFixed(1) : '',
                 change: newChange.toFixed(2),
                 comment: document.getElementById('editComment').value.trim() || "—"
