@@ -86,7 +86,6 @@
         .btn-edit-row { background: none; border: none; color: #007bff; cursor: pointer; font-size: 1.1em; padding: 0; margin: 0; width: auto; }
         .btn-del-row { background: none; border: none; color: #dc3545; cursor: pointer; font-size: 1.1em; padding: 0; margin-left: 8px; width: auto; }
 
-        /* ИСПРАВЛЕННЫЙ DRAWER: абсолютная невидимость в покое и плавный выезд */
         .drawer-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); display: none; z-index: 90; }
         .drawer-overlay.open { display: block; }
         
@@ -340,15 +339,17 @@
             tradeHistory.slice().reverse().forEach((t, i) => {
                 let realIdx = tradeHistory.length - 1 - i;
                 let tr = document.createElement('tr');
-                let cls = t.change > 0 ? 'profit' : (t.change < 0 ? 'loss' : 'breakeven');
+                let changeNum = parseFloat(t.change) || 0;
+                let cls = changeNum > 0 ? 'profit' : (changeNum < 0 ? 'loss' : 'breakeven');
                 
-                let displayRes = t.resultType === 'win' || t.resultType === 'Выигрыш' ? 'Выигрыш' : 
-                                 (t.resultType === 'lose' || t.resultType === 'Проиграл' || t.resultType === 'Проиграш' ? 'Проиграл' : 'Безубыток');
+                let displayRes = 'Безубыток';
+                if (t.resultType === 'win' || t.resultType === 'Выигрыш') displayRes = 'Выигрыш';
+                if (t.resultType === 'lose' || t.resultType === 'Проиграл' || t.resultType === 'Проиграш') displayRes = 'Проиграл';
                 
                 tr.innerHTML = `
                     <td>${realIdx + 1}</td><td class="time-text">${t.time}</td>
-                    <td>$${t.risk}</td><td class="${cls}">${displayRes}</td>
-                    <td class="${cls}">${t.change > 0 ? '+' : ''}$${t.change}</td>
+                    <td>$${parseFloat(t.risk).toFixed(2)}</td><td class="${cls}">${displayRes}</td>
+                    <td class="${cls}">${changeNum > 0 ? '+' : ''}$${changeNum.toFixed(2)}</td>
                     <td class="comment-text">${t.comment}</td>
                     <td><button class="btn-edit-row" onclick="openDrawer(${realIdx})">✏️</button><button class="btn-del-row" onclick="deleteTrade(${realIdx})">&times;</button></td>
                 `;
@@ -356,26 +357,29 @@
             });
         }
 
-        // ИСПРАВЛЕНО: Полный адаптер старых/новых данных. Значения подтягиваются ВСЕГДА!
+        // ЖЕСТКАЯ НАДЁЖНАЯ СИНХРОНИЗАЦИЯ С ЛЮБЫМ СТАРАМ ФОРМАТОМ ДАННЫХ
         function openDrawer(idx) {
             let t = tradeHistory[idx];
             document.getElementById('editTradeIndex').value = idx;
-            document.getElementById('editRisk').value = t.risk;
             
-            // Адаптер типов: превращаем кириллицу из старых логов в системные ключи
-            let normType = t.resultType;
-            if (normType === 'Выигрыш') normType = 'win';
-            if (normType === 'Проиграл' || normType === 'Проиграш') normType = 'lose';
-            if (normType === 'Безубыток') normType = 'be';
+            let rsk = parseFloat(t.risk) || 0;
+            document.getElementById('editRisk').value = rsk.toFixed(2);
+            
+            let normType = 'be';
+            if (t.resultType === 'win' || t.resultType === 'Выигрыш') normType = 'win';
+            if (t.resultType === 'lose' || t.resultType === 'Проиграл' || t.resultType === 'Проиграш') normType = 'lose';
             
             document.getElementById('editResult').value = normType;
             
-            // Распределяем данные
+            let chg = parseFloat(t.change) || 0;
+            
+            // Если старые данные не сохранили R:R, вычисляем его математически (Профит / Риск)
             if (normType === 'win') {
-                document.getElementById('editRR').value = t.rr || (parseFloat(t.change) / parseFloat(t.risk)).toFixed(1) || 1;
+                let calculatedRR = t.rr ? parseFloat(t.rr) : (rsk > 0 ? chg / rsk : 1);
+                document.getElementById('editRR').value = isNaN(calculatedRR) ? 1 : calculatedRR.toFixed(1);
                 document.getElementById('editBE').value = 0;
             } else if (normType === 'be') {
-                document.getElementById('editBE').value = t.change;
+                document.getElementById('editBE').value = chg.toFixed(2);
                 document.getElementById('editRR').value = 1;
             } else {
                 document.getElementById('editRR').value = 1;
@@ -384,10 +388,8 @@
             
             document.getElementById('editComment').value = (t.comment === "—") ? "" : t.comment;
             
-            // Показываем/скрываем нужные блоки
             toggleEditResultInputs();
             
-            // Анимируем появление
             document.getElementById('drawerOverlay').classList.add('open');
             document.getElementById('editDrawer').classList.add('open');
         }
@@ -399,7 +401,7 @@
 
         function saveEditedTrade() {
             let idx = document.getElementById('editTradeIndex').value;
-            let oldChange = parseFloat(tradeHistory[idx].change);
+            let oldChange = parseFloat(tradeHistory[idx].change) || 0;
             let res = document.getElementById('editResult').value;
             let risk = parseFloat(document.getElementById('editRisk').value) || 0;
             let newChange = 0;
@@ -412,8 +414,8 @@
             tradeHistory[idx] = {
                 ...tradeHistory[idx],
                 risk: risk.toFixed(2),
-                resultType: res,
-                rr: res === 'win' ? rrValue : '',
+                resultType: res, // Сохраняем чистый системный маркер (win/lose/be)
+                rr: res === 'win' ? parseFloat(rrValue).toFixed(1) : '',
                 change: newChange.toFixed(2),
                 comment: document.getElementById('editComment').value.trim() || "—"
             };
@@ -424,7 +426,7 @@
 
         function deleteTrade(idx) {
             if(!confirm("Удалить сделку?")) return;
-            let oldChange = parseFloat(tradeHistory[idx].change);
+            let oldChange = parseFloat(tradeHistory[idx].change) || 0;
             tradeHistory.splice(idx, 1);
             applyHistoryEffect(-oldChange);
             saveAndRefresh();
