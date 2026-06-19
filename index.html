@@ -24,14 +24,11 @@
             --radius: 12px;
         }
 
+        /* Центрируем приложение на экране */
         .app-wrapper {
-            max-width: 1040px;
+            max-width: 800px;
             margin: 30px auto;
-            display: flex;
-            align-items: flex-start;
-            gap: 20px;
             padding: 0 20px;
-            position: relative;
         }
 
         body { 
@@ -43,15 +40,16 @@
             line-height: 1.5;
         }
 
+        /* Главный контейнер (размеры жестко зафиксированы и не меняются) */
         .main-container {
-            flex: 1;
-            min-width: 0;
+            width: 100%;
             background-color: var(--bg-main); 
             padding: 24px; 
             border-radius: 16px; 
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05); 
             box-sizing: border-box;
-            position: relative;
+            position: relative; /* База для абсолютного позиционирования элементов внутри */
+            overflow: hidden; /* Чтобы оверлей и панель не вылезали за скругления */
         }
 
         h2 { margin-top: 0; margin-bottom: 20px; color: var(--text-main); text-align: center; font-size: 1.6em; font-weight: 700; letter-spacing: -0.025em; }
@@ -153,29 +151,31 @@
         .btn-del-row:hover { color: var(--danger); background-color: var(--danger-bg); }
         .btn-del-row svg { width: 16px; height: 16px; fill: currentColor; }
 
-        /* Оверлей затемнения поверх только главного контейнера */
+        /* ИСПРАВЛЕНО: Эффект красивого размытия и затемнения поверх основного контента */
         .drawer-overlay { 
             position: absolute; 
             top: 0; 
             left: 0; 
             width: 100%; 
             height: 100%; 
-            background: rgba(0, 0, 0, 0.15); 
-            backdrop-filter: blur(3px); 
+            background: rgba(0, 0, 0, 0.2); 
+            backdrop-filter: blur(4px); 
             display: none; 
             z-index: 90; 
-            border-radius: 16px;
         }
         .drawer-overlay.open { display: block; }
         
-        /* Выезжающая независимая панель редактирования */
+        /* ИСПРАВЛЕНО: Абсолютная боковая панель внутри главного блока (никак не влияет на верстку) */
         .drawer { 
-            width: 320px; 
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 350px; 
+            height: 100%;
             background: #fff; 
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-            border-radius: 16px;
+            box-shadow: -5px 0 25px rgba(0, 0, 0, 0.08);
             padding: 24px; 
-            border: 1px solid var(--border); 
+            border-left: 1px solid var(--border); 
             box-sizing: border-box; 
             display: none; 
             flex-direction: column;
@@ -189,7 +189,7 @@
         .btn-close-drawer { background: none; border: none; font-size: 1.4em; cursor: pointer; color: var(--neutral); width: auto; padding: 0; margin: 0; }
         .btn-close-drawer:hover { color: var(--text-main); }
 
-        .btn-save-drawer { background-color: #10b981; margin-top: 20px; }
+        .btn-save-drawer { background-color: #10b981; margin-top: auto; /* Прижимаем кнопку сохранения к низу панели */ }
         .btn-save-drawer:hover { background-color: #059669; }
     </style>
 </head>
@@ -309,41 +309,41 @@
             </div>
 
             <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
-        </div>
 
-        <div class="drawer" id="editDrawer">
-            <div class="drawer-header">
-                <h3 style="margin:0; font-size:1.2em;">Редактирование</h3>
-                <button class="btn-close-drawer" onclick="closeDrawer()">&times;</button>
+            <div class="drawer" id="editDrawer">
+                <div class="drawer-header">
+                    <h3 style="margin:0; font-size:1.2em;">Редактирование</h3>
+                    <button class="btn-close-drawer" onclick="closeDrawer()">&times;</button>
+                </div>
+                
+                <input type="hidden" id="editTradeIndex">
+                
+                <label>Риск ($)</label>
+                <input type="number" id="editRisk" step="0.01">
+                
+                <label>Результат</label>
+                <select id="editResult" onchange="toggleEditResultInputs()">
+                    <option value="win">Выигрыш</option>
+                    <option value="lose">Проиграл</option>
+                    <option value="be">Безубыток</option>
+                </select>
+                
+                <div id="editRRBox">
+                    <label>R:R</label>
+                    <input type="number" id="editRR" step="0.1">
+                </div>
+                <div id="editBEBox" style="display:none;">
+                    <label>Сумма результата ($)</label>
+                    <input type="number" id="editBE" step="0.01">
+                </div>
+                
+                <label>Комментарий</label>
+                <textarea id="editComment"></textarea>
+                
+                <button class="btn-save-drawer" onclick="saveEditedTrade()">Сохранить изменения</button>
             </div>
-            
-            <input type="hidden" id="editTradeIndex">
-            
-            <label>Риск ($)</label>
-            <input type="number" id="editRisk" step="0.01">
-            
-            <label>Результат</label>
-            <select id="editResult" onchange="toggleEditResultInputs()">
-                <option value="win">Выигрыш</option>
-                <option value="lose">Проиграл</option>
-                <option value="be">Безубыток</option>
-            </select>
-            
-            <div id="editRRBox">
-                <label>R:R</label>
-                <input type="number" id="editRR" step="0.1">
-            </div>
-            <div id="editBEBox" style="display:none;">
-                <label>Сумма результата ($)</label>
-                <input type="number" id="editBE" step="0.01">
-            </div>
-            
-            <label>Комментарий</label>
-            <textarea id="editComment"></textarea>
-            
-            <button class="btn-save-drawer" onclick="saveEditedTrade()">Сохранить изменения</button>
-        </div>
 
+        </div>
     </div>
 
     <script>
