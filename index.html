@@ -86,10 +86,13 @@
         .btn-edit-row { background: none; border: none; color: #007bff; cursor: pointer; font-size: 1.1em; padding: 0; margin: 0; width: auto; }
         .btn-del-row { background: none; border: none; color: #dc3545; cursor: pointer; font-size: 1.1em; padding: 0; margin-left: 8px; width: auto; }
 
-        .drawer { display: none; position: absolute; top: 0; right: 0; width: 290px; height: 100%; background: #fff; box-shadow: -5px 0 15px rgba(0,0,0,0.1); z-index: 100; padding: 15px; border-left: 1px solid #ddd; box-sizing: border-box; }
-        .drawer.open { display: block; }
-        .drawer-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.2); display: none; z-index: 90; }
+        /* ИСПРАВЛЕННЫЙ DRAWER: абсолютная невидимость в покое и плавный выезд */
+        .drawer-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); display: none; z-index: 90; }
         .drawer-overlay.open { display: block; }
+        
+        .drawer { position: absolute; top: 0; right: -320px; width: 290px; height: 100%; background: #fff; box-shadow: -5px 0 15px rgba(0,0,0,0.1); transition: right 0.3s ease-in-out; z-index: 100; padding: 15px; border-left: 1px solid #ddd; box-sizing: border-box; display: block; visibility: hidden; }
+        .drawer.open { right: 0; visibility: visible; }
+        
         .drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .btn-close-drawer { background: none; border: none; font-size: 1.5em; cursor: pointer; color: #999; width: auto; padding: 0; margin: 0; }
     </style>
@@ -339,7 +342,8 @@
                 let tr = document.createElement('tr');
                 let cls = t.change > 0 ? 'profit' : (t.change < 0 ? 'loss' : 'breakeven');
                 
-                let displayRes = t.resultType === 'win' ? 'Выигрыш' : (t.resultType === 'lose' ? 'Проиграл' : 'Безубыток');
+                let displayRes = t.resultType === 'win' || t.resultType === 'Выигрыш' ? 'Выигрыш' : 
+                                 (t.resultType === 'lose' || t.resultType === 'Проиграл' || t.resultType === 'Проиграш' ? 'Проиграл' : 'Безубыток');
                 
                 tr.innerHTML = `
                     <td>${realIdx + 1}</td><td class="time-text">${t.time}</td>
@@ -352,26 +356,40 @@
             });
         }
 
-        // ИСПРАВЛЕНО: Прямое безусловное подтягивание всех сохраненных значений без сбросов
+        // ИСПРАВЛЕНО: Полный адаптер старых/новых данных. Значения подтягиваются ВСЕГДА!
         function openDrawer(idx) {
             let t = tradeHistory[idx];
             document.getElementById('editTradeIndex').value = idx;
             document.getElementById('editRisk').value = t.risk;
-            document.getElementById('editResult').value = t.resultType;
             
-            // Всегда подставляем сохраненный R:R и сохраненное изменение (БУ), ничего принудительно не обнуляя
-            document.getElementById('editRR').value = t.rr || 1;
-            document.getElementById('editBE').value = t.change || 0;
+            // Адаптер типов: превращаем кириллицу из старых логов в системные ключи
+            let normType = t.resultType;
+            if (normType === 'Выигрыш') normType = 'win';
+            if (normType === 'Проиграл' || normType === 'Проиграш') normType = 'lose';
+            if (normType === 'Безубыток') normType = 'be';
             
-            // Если комментарий дефолтный прочерк "—", очищаем поле для удобства редактирования
-            document.getElementById('editComment').value = t.comment === "—" ? "" : t.comment;
+            document.getElementById('editResult').value = normType;
             
-            // Переключаем видимость блоков в зависимости от выбранного результата сделки
+            // Распределяем данные
+            if (normType === 'win') {
+                document.getElementById('editRR').value = t.rr || (parseFloat(t.change) / parseFloat(t.risk)).toFixed(1) || 1;
+                document.getElementById('editBE').value = 0;
+            } else if (normType === 'be') {
+                document.getElementById('editBE').value = t.change;
+                document.getElementById('editRR').value = 1;
+            } else {
+                document.getElementById('editRR').value = 1;
+                document.getElementById('editBE').value = 0;
+            }
+            
+            document.getElementById('editComment').value = (t.comment === "—") ? "" : t.comment;
+            
+            // Показываем/скрываем нужные блоки
             toggleEditResultInputs();
             
-            // Открываем Drawer
-            document.getElementById('editDrawer').classList.add('open');
+            // Анимируем появление
             document.getElementById('drawerOverlay').classList.add('open');
+            document.getElementById('editDrawer').classList.add('open');
         }
 
         function closeDrawer() {
