@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор риска</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; margin-top: 20px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #218838; }
+        .result { margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 4px; font-size: 1.1em; }
+        .amount { color: #dc3545; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h2>Калькулятор риска</h2>
+    
+    <label for="balance">Ваш баланс ($):</label>
+    <input type="number" id="balance" value="1000">
+
+    <label for="maxRisk">Макс. просадка на депозит (%):</label>
+    <input type="number" id="maxRisk" value="5">
+
+    <label for="entryPrice">Цена входа:</label>
+    <input type="number" id="entryPrice" value="100">
+
+    <label for="stopPrice">Цена Стоп-Лосс:</label>
+    <input type="number" id="stopPrice" value="95">
+
+    <button onclick="calculateRisk()">Рассчитать</button>
+
+    <div class="result" id="result" style="display:none;">
+        <p>Макс. убыток: <span id="lossAmount" class="amount">$0</span></p>
+        <p>Размер позиции (объем): <span id="positionSize" style="font-weight:bold;">0</span> ед.</p>
+    </div>
+
+    <script>
+        function calculateRisk() {
+            const balance = parseFloat(document.getElementById('balance').value);
+            const maxRiskPercent = parseFloat(document.getElementById('maxRisk').value);
+            const entryPrice = parseFloat(document.getElementById('entryPrice').value);
+            const stopPrice = parseFloat(document.getElementById('stopPrice').value);
+
+            if (isNaN(balance) || isNaN(maxRiskPercent) || isNaN(entryPrice) || isNaN(stopPrice)) {
+                alert("Пожалуйста, заполните все поля");
+                return;
+            }
+
+            // 1. Считаем макс. сумму убытка в деньгах
+            const allowedLossUSD = balance * (maxRiskPercent / 100);
+
+            // 2. Считаем разницу цены на одну единицу актива
+            const priceRiskPerUnit = Math.abs(entryPrice - stopPrice);
+
+            if (priceRiskPerUnit === 0) {
+                alert("Цена входа и Стоп-Лосс не должны быть равны");
+                return;
+            }
+
+            // 3. Считаем размер позиции
+            const positionSize = allowedLossUSD / priceRiskPerUnit;
+
+            // Выводим результат
+            document.getElementById('lossAmount').innerText = `$${allowedLossUSD.toFixed(2)}`;
+            document.getElementById('positionSize').innerText = positionSize.toFixed(4);
+            document.getElementById('result').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
