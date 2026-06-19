@@ -24,7 +24,6 @@
             --radius: 12px;
         }
 
-        /* Центрируем приложение на экране */
         .app-wrapper {
             max-width: 800px;
             margin: 30px auto;
@@ -40,16 +39,17 @@
             line-height: 1.5;
         }
 
-        /* Главный контейнер (размеры жестко зафиксированы и не меняются) */
+        /* Главный контейнер с увеличенной высотой для исключения скролла в попапе */
         .main-container {
             width: 100%;
+            min-height: 520px; /* Увеличили высоту, чтобы боковой панели хватало места */
             background-color: var(--bg-main); 
             padding: 24px; 
             border-radius: 16px; 
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05); 
             box-sizing: border-box;
-            position: relative; /* База для абсолютного позиционирования элементов внутри */
-            overflow: hidden; /* Чтобы оверлей и панель не вылезали за скругления */
+            position: relative; 
+            overflow: hidden; 
         }
 
         h2 { margin-top: 0; margin-bottom: 20px; color: var(--text-main); text-align: center; font-size: 1.6em; font-weight: 700; letter-spacing: -0.025em; }
@@ -70,7 +70,7 @@
             outline: none;
             transition: all 0.2s ease;
         }
-        textarea { padding: 10px 14px; resize: vertical; height: 60px; }
+        textarea { padding: 10px 14px; resize: vertical; height: 55px; }
         input[type="number"]:focus, select:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
 
         .account-switch { display: flex; background: var(--neutral-bg); padding: 4px; border-radius: var(--radius); margin-top: 4px; height: 42px; box-sizing: border-box; }
@@ -151,7 +151,6 @@
         .btn-del-row:hover { color: var(--danger); background-color: var(--danger-bg); }
         .btn-del-row svg { width: 16px; height: 16px; fill: currentColor; }
 
-        /* ИСПРАВЛЕНО: Эффект красивого размытия и затемнения поверх основного контента */
         .drawer-overlay { 
             position: absolute; 
             top: 0; 
@@ -165,7 +164,7 @@
         }
         .drawer-overlay.open { display: block; }
         
-        /* ИСПРАВЛЕНО: Абсолютная боковая панель внутри главного блока (никак не влияет на верстку) */
+        /* Исправленная панель: теперь на flex-компонентах, кнопка всегда снизу */
         .drawer { 
             position: absolute;
             top: 0;
@@ -178,7 +177,7 @@
             border-left: 1px solid var(--border); 
             box-sizing: border-box; 
             display: none; 
-            flex-direction: column;
+            flex-direction: column; /* Элементы выстраиваются строго в столбик */
             z-index: 100;
         }
         .drawer.open { 
@@ -189,7 +188,13 @@
         .btn-close-drawer { background: none; border: none; font-size: 1.4em; cursor: pointer; color: var(--neutral); width: auto; padding: 0; margin: 0; }
         .btn-close-drawer:hover { color: var(--text-main); }
 
-        .btn-save-drawer { background-color: #10b981; margin-top: auto; /* Прижимаем кнопку сохранения к низу панели */ }
+        /* Кнопка "Сохранить" намертво закреплена внизу без наездов */
+        .btn-save-drawer { 
+            background-color: #10b981; 
+            margin-top: auto; 
+            margin-bottom: 0;
+            flex-shrink: 0;
+        }
         .btn-save-drawer:hover { background-color: #059669; }
     </style>
 </head>
