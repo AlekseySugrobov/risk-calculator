@@ -94,6 +94,11 @@
         .history-scroll-container { max-height: 380px; overflow-y: auto; margin-top: 12px; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
         .history-table { width: 100%; border-collapse: collapse; margin-top: 0; }
         .history-table th { background-color: #fafafa; color: var(--text-muted); font-weight: 600; font-size: 0.8em; text-transform: uppercase; letter-spacing: 0.05em; padding: 12px 8px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
+        
+        /* Кликабельные строки таблицы */
+        .history-table tbody tr { cursor: pointer; transition: background-color 0.15s ease; }
+        .history-table tbody tr:hover { background-color: #f9fafb; }
+        
         .history-table td { padding: 12px 8px; text-align: center; font-size: 0.9em; border-bottom: 1px solid var(--border); color: var(--text-main); vertical-align: middle; }
         .history-table tr:last-child td { border-bottom: none; }
         
@@ -109,12 +114,11 @@
         .comment-text { text-align: left !important; font-size: 0.85em; color: var(--text-muted); max-width: 140px; overflow-wrap: break-word; white-space: normal; }
         .time-text { font-size: 0.8em; color: var(--neutral); }
 
-        .btn-edit-row { background: none; border: none; color: var(--primary); cursor: pointer; font-size: 1.1em; padding: 4px; margin: 0; width: auto; transition: opacity 0.2s; }
-        .btn-del-row { background: none; border: none; color: var(--neutral); cursor: pointer; font-size: 1.2em; padding: 4px; margin-left: 4px; width: auto; transition: color 0.2s; }
-        .btn-edit-row:hover { opacity: 0.7; }
-        .btn-del-row:hover { color: var(--danger); }
+        /* Иконка корзины */
+        .btn-del-row { background: none; border: none; color: #9ca3af; cursor: pointer; padding: 6px; margin: 0; width: auto; transition: all 0.15s ease; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; }
+        .btn-del-row:hover { color: var(--danger); background-color: var(--danger-bg); }
+        .btn-del-row svg { width: 16px; height: 16px; fill: currentColor; }
 
-        /* ИСПРАВЛЕННЫЕ СТИЛИ DRAWER: Скрытие через visibility и opacity для чистого закрытия */
         .drawer-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.15); backdrop-filter: blur(4px); display: none; z-index: 90; }
         .drawer-overlay.open { display: block; }
         
@@ -189,7 +193,6 @@
             </div>
         </div>
         <button class="btn-calc" onclick="calculateRiskOnly()">
-            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM4 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/><path d="M4 2.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h7a.5.5 0 0 1-.5-.5zm2 5.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm0 2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm2.5-2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm0 2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm2.5-2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm0 2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5z"/></svg>
             Рассчитать риски
         </button>
         
@@ -411,6 +414,9 @@
                 if (t.resultType === 'win' || t.resultType === 'Выигрыш') { bCls = 'profit'; vCls = 'val-profit'; displayRes = 'Выигрыш'; }
                 if (t.resultType === 'lose' || t.resultType === 'Проиграл' || t.resultType === 'Проиграш') { bCls = 'loss'; vCls = 'val-loss'; displayRes = 'Проиграл'; }
                 
+                // Навешиваем клик на всю строку (tr)
+                tr.setAttribute('onclick', `openDrawer(${realIdx})`);
+                
                 tr.innerHTML = `
                     <td>${realIdx + 1}</td>
                     <td class="time-text">${t.time}</td>
@@ -419,8 +425,9 @@
                     <td class="${vCls}">${changeNum > 0 ? '+' : ''}$${changeNum.toFixed(2)}</td>
                     <td class="comment-text">${t.comment}</td>
                     <td>
-                        <button class="btn-edit-row" onclick="openDrawer(${realIdx})">✏️</button>
-                        <button class="btn-del-row" onclick="deleteTrade(${realIdx})">&times;</button>
+                        <button class="btn-del-row" onclick="event.stopPropagation(); deleteTrade(${realIdx})">
+                            <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                        </button>
                     </td>
                 `;
                 body.appendChild(tr);
