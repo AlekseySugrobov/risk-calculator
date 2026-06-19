@@ -25,7 +25,7 @@
         .highlight { color: #dc3545; font-weight: bold; font-size: 1.1em; }
         .profit { color: #28a745; font-weight: bold; }
         .loss { color: #dc3545; font-weight: bold; }
-        .radio-box { margin-top: 10px; padding: 10px; border: 1px solid #eee; border-radius: 6px; }
+        .breakeven { color: #6c757d; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -87,14 +87,21 @@
     </select>
 
     <label for="tradeResult">Результат сделки:</label>
-    <select id="tradeResult">
+    <select id="tradeResult" onchange="toggleResultInputs()">
         <option value="win">Выиграл (Take Profit)</option>
         <option value="lose">Проиграл (Stop Loss)</option>
+        <option value="be">Безубыток (Микро-результат)</option>
     </select>
 
+    <!-- Поля, которые показываются/скрываются в зависимости от выбора результата -->
     <div id="rewardRatioBox">
         <label for="rewardRatio">Коэффициент прибыли (R:R, например 3 если тейк в 3 раза больше стопа):</label>
         <input type="number" id="rewardRatio" value="3" min="1">
+    </div>
+
+    <div id="breakevenAmountBox" style="display: none;">
+        <label for="beAmount">Сумма микро-результата ($):</label>
+        <input type="number" id="beAmount" value="0" step="0.01" placeholder="Например: 5 или -3">
     </div>
 
     <button class="btn-add" onclick="addTrade()">Зафиксировать сделку в журнал</button>
@@ -114,21 +121,32 @@
             </tr>
         </thead>
         <tbody id="historyBody">
-            <!-- Сюда будут добавляться строки из JS -->
+            <!-- Сюда добавляются строки из JS -->
         </tbody>
     </table>
 
     <script>
-        // Глобальные переменные для хранения текущих рассчитанных рисков
         let currentRisk1 = 0;
         let currentRisk2 = 0;
         let tradeHistory = [];
 
-        // Переключение видимости R:R в зависимости от исхода сделки
-        document.getElementById('tradeResult').addEventListener('change', function() {
+        // Функция управления отображением полей ввода результатов
+        function toggleResultInputs() {
+            const resultType = document.getElementById('tradeResult').value;
             const ratioBox = document.getElementById('rewardRatioBox');
-            ratioBox.style.display = this.value === 'win' ? 'block' : 'none';
-        });
+            const beBox = document.getElementById('breakevenAmountBox');
+
+            if (resultType === 'win') {
+                ratioBox.style.display = 'block';
+                beBox.style.display = 'none';
+            } else if (resultType === 'lose') {
+                ratioBox.style.display = 'none';
+                beBox.style.display = 'none';
+            } else if (resultType === 'be') {
+                ratioBox.style.display = 'none';
+                beBox.style.display = 'block';
+            }
+        }
 
         function calculateRiskOnly() {
             const drawdownLeft = parseFloat(document.getElementById('drawdownLeft').value);
@@ -143,7 +161,7 @@
             currentRisk1 = drawdownLeft / trades1;
             currentRisk2 = drawdownLeft / trades2;
 
-            // Сохраняем настройки формы
+            // Сохраняем настройки в LocalStorage
             localStorage.setItem('drawdownLeft', drawdownLeft);
             localStorage.setItem('trades1', trades1);
             localStorage.setItem('trades2', trades2);
@@ -156,7 +174,6 @@
         }
 
         function addTrade() {
-            // Перед добавлением убедимся, что риски рассчитаны
             if (currentRisk1 === 0 || currentRisk2 === 0) {
                 calculateRiskOnly();
             }
@@ -167,22 +184,32 @@
             const scenario = document.getElementById('chosenScenario').value;
             const result = document.getElementById('tradeResult').value;
             const ratio = parseFloat(document.getElementById('rewardRatio').value) || 1;
+            const beAmount = parseFloat(document.getElementById('beAmount').value) || 0;
 
-            // Определяем базовый риск для выбранного сценария
             const baseRisk = scenario === "1" ? currentRisk1 : currentRisk2;
             
             let changeUSD = 0;
+            let resultText = '';
+
             if (result === 'win') {
-                // Прибыль = риск умноженный на коэффициент R:R
                 changeUSD = baseRisk * ratio;
-                drawdownLeft += changeUSD;
-            } else {
-                // Убыток = строго величина риска
+                resultText = 'Выигрыш';
+            } else if (result === 'lose') {
                 changeUSD = -baseRisk;
-                drawdownLeft += changeUSD; // уменьшаем остаток до просадки
+                resultText = 'Проигрыш';
+            } else if (result === 'be') {
+                changeUSD = beAmount;
+                if (beAmount > 0) {
+                    resultText = 'БУ (Микро-плюс)';
+                } else if (beAmount < 0) {
+                    resultText = 'БУ (Микро-минус)';
+                } else {
+                    resultText = 'Безубыток';
+                }
             }
 
-            // Обновляем значение в инпуте и пересчитываем риски для следующих сделок
+            // Корректируем и обновляем депозит
+            drawdownLeft += changeUSD;
             drawdownLeftInput.value = drawdownLeft.toFixed(2);
             calculateRiskOnly();
 
@@ -190,7 +217,7 @@
             const newTrade = {
                 scenario: scenario,
                 risk: baseRisk.toFixed(2),
-                result: result === 'win' ? 'Выигрыш' : 'Проигрыш',
+                result: resultText,
                 change: changeUSD.toFixed(2)
             };
 
@@ -206,32 +233,12 @@
 
             tradeHistory.forEach((trade, index) => {
                 const row = document.createElement('tr');
-                const isWin = parseFloat(trade.change) > 0;
+                const changeVal = parseFloat(trade.change);
                 
-                row.innerHTML = `
-                    <td>${index + 1}</td>
-                    <td>Сценарий ${trade.scenario}</td>
-                    <td>$${trade.risk}</td>
-                    <td class="${isWin ? 'profit' : 'loss'}">${trade.result}</td>
-                    <td class="${isWin ? 'profit' : 'loss'}">${isWin ? '+' : ''}$${trade.change}</td>
-                `;
-                body.appendChild(row);
-            });
-        }
-
-        function clearHistory() {
-            if (confirm("Вы уверены, что хотите полностью очистить журнал сделок?")) {
-                tradeHistory = [];
-                localStorage.removeItem('tradeHistory');
-                renderHistory();
-            }
-        }
-
-        // Загрузка состояния при старте
-        window.onload = function() {
-            const savedDrawdown = localStorage.getItem('drawdownLeft');
-            const savedTrades1 = localStorage.getItem('trades1');
-            const savedTrades2 = localStorage.getItem('trades2');
-            const savedHistory = localStorage.getItem('tradeHistory');
-
-            if (savedDrawdown !== null) document.getElementById('drawdownLeft').value = savedDrawdown;
+                let textClass = 'breakeven';
+                let sign = '';
+                
+                if (changeVal > 0) {
+                    textClass = 'profit';
+                    sign = '+';
+                } else if (changeVal < 0) {
