@@ -7,7 +7,6 @@
     <style>
         body { font-family: Arial, sans-serif; max-width: 650px; margin: 30px auto; padding: 25px; border: 1px solid #ddd; border-radius: 12px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         h2, h3 { margin-top: 0; color: #333; text-align: center; }
-        h3 { margin-top: 25px; text-align: left; border-bottom: 2px solid #eee; padding-bottom: 5px; }
         label { display: block; margin-top: 15px; font-weight: bold; color: #555; }
         
         input[type="number"], select { 
@@ -64,7 +63,7 @@
         
         .result-table, .history-table { width: 100%; margin-top: 25px; border-collapse: collapse; }
         .result-table th, .result-table td, .history-table th, .history-table td { border: 1px solid #eee; padding: 10px; text-align: center; font-size: 0.95em; }
-        .result-table th, .history-table th { background-color: #f8f9fa; color: #666; }
+        .result-table th, .history-table th { background-color: #f8f9fa; color: #666; position: sticky; top: 0; z-index: 10; }
         
         .highlight { color: #dc3545; font-weight: bold; font-size: 1.1em; }
         .profit { color: #28a745; font-weight: bold; }
@@ -72,126 +71,149 @@
         .breakeven { color: #6c757d; font-weight: bold; }
         .comment-text { text-align: left !important; font-size: 0.85em; color: #555; max-width: 180px; overflow-wrap: break-word; }
         .time-text { font-size: 0.85em; color: #777; }
+
+        .tabs-header { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .tab-btn { flex: 1; padding: 10px; font-size: 1em; font-weight: bold; background-color: #f8f9fa; color: #555; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+        .tab-btn:hover { background-color: #e9ecef; }
+        .tab-btn.active { background-color: #007bff; color: white; border-color: #007bff; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .history-scroll-container { max-height: 450px; overflow-y: auto; margin-top: 15px; border: 1px solid #eee; border-radius: 6px; }
+        .history-table { margin-top: 0; }
     </style>
 </head>
 <body>
 
     <h2>Риск-менеджер и Журнал</h2>
+
+    <div class="tabs-header">
+        <button class="tab-btn active" onclick="switchTab('calcTab', this)">Калькулятор и Вход</button>
+        <button class="tab-btn" onclick="switchTab('historyTab', this)">Журнал сделок</button>
+    </div>
     
-    <label>Тип аккаунта:</label>
-    <div class="radio-group">
-        <label class="radio-label">
-            <input type="radio" name="accountType" value="challenge" checked onchange="toggleAccountType()"> Challenge
-        </label>
-        <label class="radio-label">
-            <input type="radio" name="accountType" value="funded" onchange="toggleAccountType()"> Funded
-        </label>
+    <div id="calcTab" class="tab-content active">
+        <label>Тип аккаунта:</label>
+        <div class="radio-group">
+            <label class="radio-label">
+                <input type="radio" name="accountType" value="challenge" checked onchange="toggleAccountType()"> Challenge
+            </label>
+            <label class="radio-label">
+                <input type="radio" name="accountType" value="funded" onchange="toggleAccountType()"> Funded
+            </label>
+        </div>
+
+        <div class="flex-container">
+            <div class="flex-child">
+                <label for="accountBalance">Текущий баланс ($):</label>
+                <input type="number" id="accountBalance" value="10000" step="0.01">
+            </div>
+            <div class="flex-child">
+                <label for="drawdownLeft">Остаток до drawdown ($):</label>
+                <input type="number" id="drawdownLeft" value="500" step="0.01">
+            </div>
+            <div class="flex-child" id="maxDrawdownBox">
+                <label for="maxDrawdown">Макс. Drawdown ($):</label>
+                <input type="number" id="maxDrawdown" value="500" step="0.01">
+            </div>
+        </div>
+
+        <div class="flex-container">
+            <div class="flex-child">
+                <label for="trades1">Сделок (Сц. 1):</label>
+                <input type="number" id="trades1" value="4">
+            </div>
+            <div class="flex-child">
+                <label for="trades2">Сделок (Сц. 2):</label>
+                <input type="number" id="trades2" value="6">
+            </div>
+        </div>
+
+        <button class="btn-calc" onclick="calculateRiskOnly()">Рассчитать риски</button>
+
+        <table class="result-table" id="resultTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th>Сценарий</th>
+                    <th>Сделок</th>
+                    <th>Риск на сделку</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Вариант 1</td>
+                    <td id="resTrades1">4</td>
+                    <td id="risk1" class="highlight">$0</td>
+                </tr>
+                <tr>
+                    <td>Вариант 2</td>
+                    <td id="resTrades2">6</td>
+                    <td id="risk2" class="highlight">$0</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3 style="margin-top: 25px; border-bottom: 2px solid #eee; padding-bottom: 5px; text-align: left;">Добавить сделку в журнал</h3>
+        
+        <div class="flex-container">
+            <div class="flex-child">
+                <label for="chosenScenario">Подставить риск из:</label>
+                <select id="chosenScenario" onchange="updateActualRiskInput()">
+                    <option value="1">Сценария 1</option>
+                    <option value="2">Сценария 2</option>
+                </select>
+            </div>
+            <div class="flex-child">
+                <label for="actualRisk">Фактический риск ($):</label>
+                <input type="number" id="actualRisk" value="0" step="0.01">
+            </div>
+        </div>
+
+        <label for="tradeResult">Результат сделки:</label>
+        <select id="tradeResult" onchange="toggleResultInputs()">
+            <option value="win">Выиграл (Take Profit)</option>
+            <option value="lose">Проиграл (Stop Loss)</option>
+            <option value="be">Безубыток (Микро-результат)</option>
+        </select>
+
+        <div id="rewardRatioBox">
+            <label for="rewardRatio">Коэффициент прибыли (R:R):</label>
+            <input type="number" id="rewardRatio" value="1" min="0.1" step="0.1">
+        </div>
+
+        <div id="breakevenAmountBox" style="display: none;">
+            <label for="beAmount">Сумма микро-результата ($):</label>
+            <input type="number" id="beAmount" value="0" step="0.01">
+        </div>
+
+        <label for="tradeComment">Комментарий к сделке:</label>
+        <textarea id="tradeComment" placeholder="Например: Вход от локального уровня..."></textarea>
+
+        <button class="btn-add" onclick="addTrade()">Зафиксировать сделку в журнал</button>
     </div>
 
-    <div class="flex-container">
-        <div class="flex-child">
-            <label for="accountBalance">Текущий баланс ($):</label>
-            <input type="number" id="accountBalance" value="10000" step="0.01">
+    <div id="historyTab" class="tab-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+            <h3 style="margin: 0;">История сделок</h3>
+            <button class="btn-clear" onclick="clearHistory()">Очистить журнал</button>
         </div>
-        <div class="flex-child">
-            <label for="drawdownLeft">Остаток до drawdown ($):</label>
-            <input type="number" id="drawdownLeft" value="500" step="0.01">
-        </div>
-        <div class="flex-child" id="maxDrawdownBox">
-            <label for="maxDrawdown">Макс. Drawdown ($):</label>
-            <input type="number" id="maxDrawdown" value="500" step="0.01">
-        </div>
-    </div>
-
-    <div class="flex-container">
-        <div class="flex-child">
-            <label for="trades1">Сделок (Сц. 1):</label>
-            <input type="number" id="trades1" value="4">
-        </div>
-        <div class="flex-child">
-            <label for="trades2">Сделок (Сц. 2):</label>
-            <input type="number" id="trades2" value="6">
+        
+        <div class="history-scroll-container">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Дата / Время</th>
+                        <th>Риск</th>
+                        <th>Результат</th>
+                        <th>Изменение ($)</th>
+                        <th>Комментарий</th>
+                    </tr>
+                </thead>
+                <tbody id="historyBody"></tbody>
+            </table>
         </div>
     </div>
-
-    <button class="btn-calc" onclick="calculateRiskOnly()">Рассчитать риски</button>
-
-    <table class="result-table" id="resultTable" style="display: none;">
-        <thead>
-            <tr>
-                <th>Сценарий</th>
-                <th>Сделок</th>
-                <th>Риск на сделку</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>Вариант 1</td>
-                <td id="resTrades1">4</td>
-                <td id="risk1" class="highlight">$0</td>
-            </tr>
-            <tr>
-                <td>Вариант 2</td>
-                <td id="resTrades2">6</td>
-                <td id="risk2" class="highlight">$0</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <h3>Добавить сделку в журнал</h3>
-    
-    <div class="flex-container">
-        <div class="flex-child">
-            <label for="chosenScenario">Подставить риск из:</label>
-            <select id="chosenScenario" onchange="updateActualRiskInput()">
-                <option value="1">Сценария 1</option>
-                <option value="2">Сценария 2</option>
-            </select>
-        </div>
-        <div class="flex-child">
-            <label for="actualRisk">Фактический риск ($):</label>
-            <input type="number" id="actualRisk" value="0" step="0.01">
-        </div>
-    </div>
-
-    <label for="tradeResult">Результат сделки:</label>
-    <select id="tradeResult" onchange="toggleResultInputs()">
-        <option value="win">Выиграл (Take Profit)</option>
-        <option value="lose">Проиграл (Stop Loss)</option>
-        <option value="be">Безубыток (Микро-результат)</option>
-    </select>
-
-    <div id="rewardRatioBox">
-        <label for="rewardRatio">Коэффициент прибыли (R:R):</label>
-        <input type="number" id="rewardRatio" value="1" min="0.1" step="0.1">
-    </div>
-
-    <div id="breakevenAmountBox" style="display: none;">
-        <label for="beAmount">Сумма микро-результата ($):</label>
-        <input type="number" id="beAmount" value="0" step="0.01">
-    </div>
-
-    <label for="tradeComment">Комментарий к сделке:</label>
-    <textarea id="tradeComment" placeholder="Например: Вход от локального уровня..."></textarea>
-
-    <button class="btn-add" onclick="addTrade()">Зафиксировать сделку в журнал</button>
-
-    <h3>История сделок</h3>
-    <button class="btn-clear" onclick="clearHistory()">Очистить журнал</button>
-    
-    <table class="history-table">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Дата / Время</th>
-                <th>Риск</th>
-                <th>Результат</th>
-                <th>Изменение ($)</th>
-                <th>Комментарий</th>
-            </tr>
-        </thead>
-        <tbody id="historyBody"></tbody>
-    </table>
 
     <script>
         let calcRisk1 = 0;
@@ -225,6 +247,14 @@
             calculateRiskOnly();
             renderHistory();
         };
+
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active');
+            btn.classList.add('active');
+        }
 
         function toggleAccountType() {
             const accountType = document.querySelector('input[name="accountType"]:checked').value;
