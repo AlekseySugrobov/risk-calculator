@@ -95,9 +95,30 @@
         .history-table { width: 100%; border-collapse: collapse; margin-top: 0; }
         .history-table th { background-color: #fafafa; color: var(--text-muted); font-weight: 600; font-size: 0.8em; text-transform: uppercase; letter-spacing: 0.05em; padding: 12px 8px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
         
-        /* Кликабельные строки таблицы */
-        .history-table tbody tr { cursor: pointer; transition: background-color 0.15s ease; }
-        .history-table tbody tr:hover { background-color: #f9fafb; }
+        .history-table tbody tr { cursor: pointer; transition: background-color 0.15s ease; position: relative; }
+        
+        /* КРАСИВАЯ НЕНАВЯЗЧИВАЯ ИНДИКАЦИЯ СТРОК */
+        .history-table tbody tr.row-positive { 
+            background: linear-gradient(90deg, rgba(16, 185, 129, 0.05) 0%, rgba(255,255,255,0) 25%);
+        }
+        .history-table tbody tr.row-positive:hover { background-color: rgba(16, 185, 129, 0.08); }
+        .history-table tbody tr.row-positive td:first-child { 
+            box-shadow: inset 4px 0 0 0 var(--success);
+        }
+
+        .history-table tbody tr.row-negative { 
+            background: linear-gradient(90deg, rgba(239, 68, 68, 0.04) 0%, rgba(255,255,255,0) 25%);
+        }
+        .history-table tbody tr.row-negative:hover { background-color: rgba(239, 68, 68, 0.07); }
+        .history-table tbody tr.row-negative td:first-child { 
+            box-shadow: inset 4px 0 0 0 var(--danger);
+        }
+
+        .history-table tbody tr.row-neutral { background-color: transparent; }
+        .history-table tbody tr.row-neutral:hover { background-color: #f9fafb; }
+        .history-table tbody tr.row-neutral td:first-child { 
+            box-shadow: inset 4px 0 0 0 var(--neutral);
+        }
         
         .history-table td { padding: 12px 8px; text-align: center; font-size: 0.9em; border-bottom: 1px solid var(--border); color: var(--text-main); vertical-align: middle; }
         .history-table tr:last-child td { border-bottom: none; }
@@ -114,7 +135,6 @@
         .comment-text { text-align: left !important; font-size: 0.85em; color: var(--text-muted); max-width: 140px; overflow-wrap: break-word; white-space: normal; }
         .time-text { font-size: 0.8em; color: var(--neutral); }
 
-        /* Иконка корзины */
         .btn-del-row { background: none; border: none; color: #9ca3af; cursor: pointer; padding: 6px; margin: 0; width: auto; transition: all 0.15s ease; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; }
         .btn-del-row:hover { color: var(--danger); background-color: var(--danger-bg); }
         .btn-del-row svg { width: 16px; height: 16px; fill: currentColor; }
@@ -411,10 +431,25 @@
                 let changeNum = parseFloat(t.change) || 0;
                 
                 let bCls = 'breakeven'; let vCls = 'val-neutral'; let displayRes = 'Безубыток';
-                if (t.resultType === 'win' || t.resultType === 'Выигрыш') { bCls = 'profit'; vCls = 'val-profit'; displayRes = 'Выигрыш'; }
-                if (t.resultType === 'lose' || t.resultType === 'Проиграл' || t.resultType === 'Проиграш') { bCls = 'loss'; vCls = 'val-loss'; displayRes = 'Проиграл'; }
+                let rowIndicatorClass = 'row-neutral'; // Класс индикации строки по умолчанию
+
+                if (t.resultType === 'win' || t.resultType === 'Выигрыш') { 
+                    bCls = 'profit'; vCls = 'val-profit'; displayRes = 'Выигрыш'; 
+                }
+                if (t.resultType === 'lose' || t.resultType === 'Проиграл' || t.resultType === 'Проиграш') { 
+                    bCls = 'loss'; vCls = 'val-loss'; displayRes = 'Проиграл'; 
+                }
+
+                // Динамическое вычисление класса индикации на основе итогового изменения ($)
+                if (changeNum > 0) {
+                    rowIndicatorClass = 'row-positive';
+                } else if (changeNum < 0) {
+                    rowIndicatorClass = 'row-negative';
+                } else {
+                    rowIndicatorClass = 'row-neutral';
+                }
                 
-                // Навешиваем клик на всю строку (tr)
+                tr.className = rowIndicatorClass;
                 tr.setAttribute('onclick', `openDrawer(${realIdx})`);
                 
                 tr.innerHTML = `
