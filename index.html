@@ -81,10 +81,14 @@
     <h3>Добавить сделку в журнал</h3>
     
     <label for="chosenScenario">Какой сценарий использовали?</label>
-    <select id="chosenScenario">
+    <select id="chosenScenario" onchange="updateActualRiskInput()">
         <option value="1">Сценарий 1</option>
         <option value="2">Сценарий 2</option>
     </select>
+
+    <!-- ПОЛЕ ДЛЯ РУЧНОГО ОКРУГЛЕНИЯ РИСКА -->
+    <label for="actualRisk">Фактический риск в сделке ($):</label>
+    <input type="number" id="actualRisk" value="0" placeholder="Какую сумму вы закладывали?">
 
     <label for="tradeResult">Результат сделки:</label>
     <select id="tradeResult" onchange="toggleResultInputs()">
@@ -148,6 +152,17 @@
             }
         }
 
+        // Авто-подстановка расчетного риска в поле ввода для ручного изменения
+        function updateActualRiskInput() {
+            const scenario = document.getElementById('chosenScenario').value;
+            const actualRiskInput = document.getElementById('actualRisk');
+            if (scenario === "1") {
+                actualRiskInput.value = Math.round(currentRisk1);
+            } else {
+                actualRiskInput.value = Math.round(currentRisk2);
+            }
+        }
+
         function calculateRiskOnly() {
             const drawdownLeft = parseFloat(document.getElementById('drawdownLeft').value);
             const trades1 = parseInt(document.getElementById('trades1').value);
@@ -171,13 +186,12 @@
             document.getElementById('risk1').innerText = `$${currentRisk1.toFixed(2)}`;
             document.getElementById('risk2').innerText = `$${currentRisk2.toFixed(2)}`;
             document.getElementById('resultTable').style.display = 'table';
+
+            // Обновляем значение фактического риска при расчете
+            updateActualRiskInput();
         }
 
         function addTrade() {
-            if (currentRisk1 === 0 || currentRisk2 === 0) {
-                calculateRiskOnly();
-            }
-
             const drawdownLeftInput = document.getElementById('drawdownLeft');
             let drawdownLeft = parseFloat(drawdownLeftInput.value);
             
@@ -185,17 +199,25 @@
             const result = document.getElementById('tradeResult').value;
             const ratio = parseFloat(document.getElementById('rewardRatio').value) || 1;
             const beAmount = parseFloat(document.getElementById('beAmount').value) || 0;
+            
+            // Берём риск, который вы указали/округлили вручную
+            const userRisk = parseFloat(document.getElementById('actualRisk').value);
 
-            const baseRisk = scenario === "1" ? currentRisk1 : currentRisk2;
+            if (isNaN(userRisk) || userRisk <= 0) {
+                alert("Пожалуйста, укажите корректную сумму фактического риска (больше 0)");
+                return;
+            }
             
             let changeUSD = 0;
             let resultText = '';
 
             if (result === 'win') {
-                changeUSD = baseRisk * ratio;
+                // Прибыль считается от вашего округленного риска
+                changeUSD = userRisk * ratio;
                 resultText = 'Выигрыш';
             } else if (result === 'lose') {
-                changeUSD = -baseRisk;
+                // Убыток равен вашему округленному риску
+                changeUSD = -userRisk;
                 resultText = 'Проигрыш';
             } else if (result === 'be') {
                 changeUSD = beAmount;
@@ -210,35 +232,3 @@
 
             // Корректируем и обновляем депозит
             drawdownLeft += changeUSD;
-            drawdownLeftInput.value = drawdownLeft.toFixed(2);
-            calculateRiskOnly();
-
-            // Добавляем запись в массив истории
-            const newTrade = {
-                scenario: scenario,
-                risk: baseRisk.toFixed(2),
-                result: resultText,
-                change: changeUSD.toFixed(2)
-            };
-
-            tradeHistory.push(newTrade);
-            localStorage.setItem('tradeHistory', JSON.stringify(tradeHistory));
-            
-            renderHistory();
-        }
-
-        function renderHistory() {
-            const body = document.getElementById('historyBody');
-            body.innerHTML = '';
-
-            tradeHistory.forEach((trade, index) => {
-                const row = document.createElement('tr');
-                const changeVal = parseFloat(trade.change);
-                
-                let textClass = 'breakeven';
-                let sign = '';
-                
-                if (changeVal > 0) {
-                    textClass = 'profit';
-                    sign = '+';
-                } else if (changeVal < 0) {
