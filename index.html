@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Калькулятор риска и Журнал сделок</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 30px auto; padding: 25px; border: 1px solid #ddd; border-radius: 12px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        body { font-family: Arial, sans-serif; max-width: 650px; margin: 30px auto; padding: 25px; border: 1px solid #ddd; border-radius: 12px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         h2, h3 { margin-top: 0; color: #333; text-align: center; }
         h3 { margin-top: 25px; text-align: left; border-bottom: 2px solid #eee; padding-bottom: 5px; }
         label { display: block; margin-top: 15px; font-weight: bold; color: #555; }
-        input, select { width: 100%; padding: 10px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-size: 1em; }
+        input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-size: 1em; font-family: Arial, sans-serif; }
+        textarea { resize: vertical; height: 60px; }
         .flex-container { display: flex; gap: 15px; }
         .flex-child { flex: 1; }
         button { width: 100%; padding: 12px; margin-top: 20px; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1em; font-weight: bold; }
@@ -20,12 +21,14 @@
         .btn-clear { background-color: #dc3545; padding: 6px 12px; font-size: 0.85em; width: auto; margin: 10px 0; }
         .btn-clear:hover { background-color: #bd2130; }
         .result-table, .history-table { width: 100%; margin-top: 25px; border-collapse: collapse; }
-        .result-table th, .result-table td, .history-table th, .history-table td { border: 1px solid #eee; padding: 12px; text-align: center; }
+        .result-table th, .result-table td, .history-table th, .history-table td { border: 1px solid #eee; padding: 10px; text-align: center; font-size: 0.95em; }
         .result-table th, .history-table th { background-color: #f8f9fa; color: #666; }
         .highlight { color: #dc3545; font-weight: bold; font-size: 1.1em; }
         .profit { color: #28a745; font-weight: bold; }
         .loss { color: #dc3545; font-weight: bold; }
         .breakeven { color: #6c757d; font-weight: bold; }
+        .comment-text { text-align: left !important; font-size: 0.85em; color: #555; max-width: 150px; overflow-wrap: break-word; }
+        .time-text { font-size: 0.85em; color: #777; }
     </style>
 </head>
 <body>
@@ -80,15 +83,19 @@
     <!-- Блок добавления сделки в журнал -->
     <h3>Добавить сделку в журнал</h3>
     
-    <label for="chosenScenario">Какой сценарий использовали?</label>
-    <select id="chosenScenario" onchange="updateActualRiskInput()">
-        <option value="1">Сценарий 1</option>
-        <option value="2">Сценарий 2</option>
-    </select>
-
-    <!-- ПОЛЕ ДЛЯ РУЧНОГО ОКРУГЛЕНИЯ РИСКА -->
-    <label for="actualRisk">Фактический риск в сделке ($):</label>
-    <input type="number" id="actualRisk" value="0" placeholder="Какую сумму вы закладывали?">
+    <div class="flex-container">
+        <div class="flex-child">
+            <label for="chosenScenario">Подставить риск из:</label>
+            <select id="chosenScenario" onchange="updateActualRiskInput()">
+                <option value="1">Сценария 1</option>
+                <option value="2">Сценария 2</option>
+            </select>
+        </div>
+        <div class="flex-child">
+            <label for="actualRisk">Риск в сделке ($):</label>
+            <input type="number" id="actualRisk" value="0">
+        </div>
+    </div>
 
     <label for="tradeResult">Результат сделки:</label>
     <select id="tradeResult" onchange="toggleResultInputs()">
@@ -99,7 +106,7 @@
 
     <!-- Поля, которые показываются/скрываются в зависимости от выбора результата -->
     <div id="rewardRatioBox">
-        <label for="rewardRatio">Коэффициент прибыли (R:R, например 3 если тейк в 3 раза больше стопа):</label>
+        <label for="rewardRatio">Коэффициент прибыли (R:R, например 3):</label>
         <input type="number" id="rewardRatio" value="3" min="1">
     </div>
 
@@ -107,6 +114,10 @@
         <label for="beAmount">Сумма микро-результата ($):</label>
         <input type="number" id="beAmount" value="0" step="0.01" placeholder="Например: 5 или -3">
     </div>
+
+    <!-- КОММЕНТАРИЙ К СДЕЛКЕ -->
+    <label for="tradeComment">Комментарий к сделке:</label>
+    <textarea id="tradeComment" placeholder="Например: BTC Long от уровня, проскальзывание..."></textarea>
 
     <button class="btn-add" onclick="addTrade()">Зафиксировать сделку в журнал</button>
 
@@ -118,10 +129,11 @@
         <thead>
             <tr>
                 <th>#</th>
-                <th>Сценарий</th>
+                <th>Дата / Время</th>
                 <th>Риск</th>
                 <th>Результат</th>
                 <th>Изменение ($)</th>
+                <th>Комментарий</th>
             </tr>
         </thead>
         <tbody id="historyBody">
@@ -134,7 +146,6 @@
         let currentRisk2 = 0;
         let tradeHistory = [];
 
-        // Функция управления отображением полей ввода результатов
         function toggleResultInputs() {
             const resultType = document.getElementById('tradeResult').value;
             const ratioBox = document.getElementById('rewardRatioBox');
@@ -152,7 +163,6 @@
             }
         }
 
-        // Авто-подстановка расчетного риска в поле ввода для ручного изменения
         function updateActualRiskInput() {
             const scenario = document.getElementById('chosenScenario').value;
             const actualRiskInput = document.getElementById('actualRisk');
@@ -176,7 +186,6 @@
             currentRisk1 = drawdownLeft / trades1;
             currentRisk2 = drawdownLeft / trades2;
 
-            // Сохраняем настройки в LocalStorage
             localStorage.setItem('drawdownLeft', drawdownLeft);
             localStorage.setItem('trades1', trades1);
             localStorage.setItem('trades2', trades2);
@@ -187,7 +196,6 @@
             document.getElementById('risk2').innerText = `$${currentRisk2.toFixed(2)}`;
             document.getElementById('resultTable').style.display = 'table';
 
-            // Обновляем значение фактического риска при расчете
             updateActualRiskInput();
         }
 
@@ -195,16 +203,15 @@
             const drawdownLeftInput = document.getElementById('drawdownLeft');
             let drawdownLeft = parseFloat(drawdownLeftInput.value);
             
-            const scenario = document.getElementById('chosenScenario').value;
             const result = document.getElementById('tradeResult').value;
             const ratio = parseFloat(document.getElementById('rewardRatio').value) || 1;
             const beAmount = parseFloat(document.getElementById('beAmount').value) || 0;
-            
-            // Берём риск, который вы указали/округлили вручную
             const userRisk = parseFloat(document.getElementById('actualRisk').value);
+            const commentInput = document.getElementById('tradeComment');
+            const comment = commentInput.value.trim() || "—";
 
             if (isNaN(userRisk) || userRisk <= 0) {
-                alert("Пожалуйста, укажите корректную сумму фактического риска (больше 0)");
+                alert("Пожалуйста, укажите сумму фактического риска (больше 0)");
                 return;
             }
             
@@ -212,23 +219,14 @@
             let resultText = '';
 
             if (result === 'win') {
-                // Прибыль считается от вашего округленного риска
                 changeUSD = userRisk * ratio;
                 resultText = 'Выигрыш';
             } else if (result === 'lose') {
-                // Убыток равен вашему округленному риску
                 changeUSD = -userRisk;
                 resultText = 'Проигрыш';
             } else if (result === 'be') {
                 changeUSD = beAmount;
-                if (beAmount > 0) {
-                    resultText = 'БУ (Микро-плюс)';
-                } else if (beAmount < 0) {
-                    resultText = 'БУ (Микро-минус)';
-                } else {
-                    resultText = 'Безубыток';
-                }
-            }
-
-            // Корректируем и обновляем депозит
-            drawdownLeft += changeUSD;
+                if (beAmount > 0) resultText = 'БУ (+';
+                else if (beAmount < 0) resultText = 'БУ (';
+                else resultText = 'Безубыток';
+                
