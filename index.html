@@ -86,7 +86,6 @@
         .btn-edit-row { background: none; border: none; color: #007bff; cursor: pointer; font-size: 1.1em; padding: 0; margin: 0; width: auto; }
         .btn-del-row { background: none; border: none; color: #dc3545; cursor: pointer; font-size: 1.1em; padding: 0; margin-left: 8px; width: auto; }
 
-        /* ИСПРАВЛЕНО: display: none в дефолте полностью исключает её появление на главном экране */
         .drawer { display: none; position: absolute; top: 0; right: 0; width: 290px; height: 100%; background: #fff; box-shadow: -5px 0 15px rgba(0,0,0,0.1); z-index: 100; padding: 15px; border-left: 1px solid #ddd; box-sizing: border-box; }
         .drawer.open { display: block; }
         .drawer-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.2); display: none; z-index: 90; }
@@ -353,27 +352,24 @@
             });
         }
 
+        // ИСПРАВЛЕНО: Прямое безусловное подтягивание всех сохраненных значений без сбросов
         function openDrawer(idx) {
             let t = tradeHistory[idx];
             document.getElementById('editTradeIndex').value = idx;
             document.getElementById('editRisk').value = t.risk;
             document.getElementById('editResult').value = t.resultType;
             
-            if (t.resultType === 'win') {
-                document.getElementById('editRR').value = t.rr || 1;
-                document.getElementById('editBE').value = 0;
-            } else if (t.resultType === 'be') {
-                document.getElementById('editBE').value = t.change;
-                document.getElementById('editRR').value = 1;
-            } else {
-                document.getElementById('editRR').value = 1;
-                document.getElementById('editBE').value = 0;
-            }
+            // Всегда подставляем сохраненный R:R и сохраненное изменение (БУ), ничего принудительно не обнуляя
+            document.getElementById('editRR').value = t.rr || 1;
+            document.getElementById('editBE').value = t.change || 0;
             
-            document.getElementById('editComment').value = t.comment;
+            // Если комментарий дефолтный прочерк "—", очищаем поле для удобства редактирования
+            document.getElementById('editComment').value = t.comment === "—" ? "" : t.comment;
             
+            // Переключаем видимость блоков в зависимости от выбранного результата сделки
             toggleEditResultInputs();
             
+            // Открываем Drawer
             document.getElementById('editDrawer').classList.add('open');
             document.getElementById('drawerOverlay').classList.add('open');
         }
@@ -401,7 +397,7 @@
                 resultType: res,
                 rr: res === 'win' ? rrValue : '',
                 change: newChange.toFixed(2),
-                comment: document.getElementById('editComment').value.trim()
+                comment: document.getElementById('editComment').value.trim() || "—"
             };
 
             applyHistoryEffect(newChange - oldChange);
