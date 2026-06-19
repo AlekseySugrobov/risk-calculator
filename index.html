@@ -62,6 +62,7 @@
     </table>
 
     <script>
+        // Функция для расчета и сохранения данных
         function calculateRiskOnly() {
             const drawdownLeft = parseFloat(document.getElementById('drawdownLeft').value);
             const trades1 = parseInt(document.getElementById('trades1').value);
@@ -77,20 +78,42 @@
                 return;
             }
 
-            // Простой расчет: остаток / количество сделок
+            // Сохраняем введенные значения в память браузера
+            localStorage.setItem('drawdownLeft', drawdownLeft);
+            localStorage.setItem('trades1', trades1);
+            localStorage.setItem('trades2', trades2);
+
+            // Считаем риск
             const riskPerTrade1 = drawdownLeft / trades1;
             const riskPerTrade2 = drawdownLeft / trades2;
 
-            // Вывод в таблицу
+            // Выводим в таблицу
             document.getElementById('resTrades1').innerText = trades1;
             document.getElementById('resTrades2').innerText = trades2;
 
             document.getElementById('risk1').innerText = `$${riskPerTrade1.toFixed(2)}`;
             document.getElementById('risk2').innerText = `$${riskPerTrade2.toFixed(2)}`;
 
-            // Показываем таблицу
+            // Показываем таблицу результатов
             document.getElementById('resultTable').style.display = 'table';
         }
+
+        // Функция автоматической загрузки данных при открытии страницы
+        window.onload = function() {
+            const savedDrawdown = localStorage.getItem('drawdownLeft');
+            const savedTrades1 = localStorage.getItem('trades1');
+            const savedTrades2 = localStorage.getItem('trades2');
+
+            // Если в памяти есть сохраненные данные, подставляем их в поля и сразу считаем
+            if (savedDrawdown !== null && savedTrades1 !== null && savedTrades2 !== null) {
+                document.getElementById('drawdownLeft').value = savedDrawdown;
+                document.getElementById('trades1').value = savedTrades1;
+                document.getElementById('trades2').value = savedTrades2;
+                
+                // Автоматически запускаем расчет, чтобы таблица сразу была видна
+                calculateRiskOnly();
+            }
+        };
     </script>
 </body>
 </html>
