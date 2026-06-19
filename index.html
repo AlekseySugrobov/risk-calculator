@@ -3,70 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Калькулятор риска</title>
+    <title>Калькулятор риска по сценариям</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
-        label { display: block; margin-top: 10px; font-weight: bold; }
-        input { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; margin-top: 20px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background-color: #218838; }
-        .result { margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 4px; font-size: 1.1em; }
-        .amount { color: #dc3545; font-weight: bold; }
+        body { font-family: Arial, sans-serif; max-width: 500px; margin: 40px auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; background-color: #f9f9f9; }
+        label { display: block; margin-top: 15px; font-weight: bold; }
+        input { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        .flex-container { display: flex; gap: 15px; }
+        .flex-child { flex: 1; }
+        button { width: 100%; padding: 12px; margin-top: 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1em; font-weight: bold; }
+        button:hover { background-color: #0056b3; }
+        .result-table { width: 100%; margin-top: 25px; border-collapse: collapse; display: none; }
+        .result-table th, .result-table td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        .result-table th { background-color: #f2f2f2; }
+        .highlight { color: #dc3545; font-weight: bold; }
+        .pos-size { font-weight: bold; color: #28a745; }
     </style>
 </head>
 <body>
 
-    <h2>Калькулятор риска</h2>
+    <h2>Калькулятор риска (Сценарии)</h2>
     
-    <label for="balance">Ваш баланс ($):</label>
-    <input type="number" id="balance" value="1000">
+    <label for="drawdownLeft">Остаток до drawdown ($):</label>
+    <input type="number" id="drawdownLeft" value="500" placeholder="Сколько можно потерять всего">
 
-    <label for="maxRisk">Макс. просадка на депозит (%):</label>
-    <input type="number" id="maxRisk" value="5">
-
-    <label for="entryPrice">Цена входа:</label>
-    <input type="number" id="entryPrice" value="100">
-
-    <label for="stopPrice">Цена Стоп-Лосс:</label>
-    <input type="number" id="stopPrice" value="95">
-
-    <button onclick="calculateRisk()">Рассчитать</button>
-
-    <div class="result" id="result" style="display:none;">
-        <p>Макс. убыток: <span id="lossAmount" class="amount">$0</span></p>
-        <p>Размер позиции (объем): <span id="positionSize" style="font-weight:bold;">0</span> ед.</p>
+    <div class="flex-container">
+        <div class="flex-child">
+            <label for="trades1">Сделок (Сценарий 1):</label>
+            <input type="number" id="trades1" value="4">
+        </div>
+        <div class="flex-child">
+            <label for="trades2">Сделок (Сценарий 2):</label>
+            <input type="number" id="trades2" value="6">
+        </div>
     </div>
 
+    <div class="flex-container">
+        <div class="flex-child">
+            <label for="entryPrice">Цена входа:</label>
+            <input type="number" id="entryPrice" value="100">
+        </div>
+        <div class="flex-child">
+            <label for="stopPrice">Цена Стоп-Лосс:</label>
+            <input type="number" id="stopPrice" value="95">
+        </div>
+    </div>
+
+    <button onclick="calculateScenarios()">Рассчитать сценарии</button>
+
+    <table class="result-table" id="resultTable">
+        <thead>
+            <tr>
+                <th>Показатель</th>
+                <th>Сценарий 1</th>
+                <th>Сценарий 2</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Кол-во сделок</td>
+                <td id="resTrades1">0</td>
+                <td id="resTrades2">0</td>
+            </tr>
+            <tr>
+                <td>Риск на сделку</td>
+                <td id="risk1" class="highlight">$0</td>
+                <td id="risk2" class="highlight">$0</td>
+            </tr>
+            <tr>
+                <td>Объем позиции</td>
+                <td id="size1" class="pos-size">0</td>
+                <td id="size2" class="pos-size">0</td>
+            </tr>
+        </tbody>
+    </table>
+
     <script>
-        function calculateRisk() {
-            const balance = parseFloat(document.getElementById('balance').value);
-            const maxRiskPercent = parseFloat(document.getElementById('maxRisk').value);
+        function calculateScenarios() {
+            const drawdownLeft = parseFloat(document.getElementById('drawdownLeft').value);
+            const trades1 = parseInt(document.getElementById('trades1').value);
+            const trades2 = parseInt(document.getElementById('trades2').value);
             const entryPrice = parseFloat(document.getElementById('entryPrice').value);
             const stopPrice = parseFloat(document.getElementById('stopPrice').value);
 
-            if (isNaN(balance) || isNaN(maxRiskPercent) || isNaN(entryPrice) || isNaN(stopPrice)) {
-                alert("Пожалуйста, заполните все поля");
+            if (isNaN(drawdownLeft) || isNaN(trades1) || isNaN(trades2) || isNaN(entryPrice) || isNaN(stopPrice)) {
+                alert("Пожалуйста, заполните все поля числовыми значениями");
                 return;
             }
 
-            // 1. Считаем макс. сумму убытка в деньгах
-            const allowedLossUSD = balance * (maxRiskPercent / 100);
+            if (trades1 <= 0 || trades2 <= 0) {
+                alert("Количество сделок должно быть больше нуля");
+                return;
+            }
 
-            // 2. Считаем разницу цены на одну единицу актива
             const priceRiskPerUnit = Math.abs(entryPrice - stopPrice);
-
             if (priceRiskPerUnit === 0) {
                 alert("Цена входа и Стоп-Лосс не должны быть равны");
                 return;
             }
 
-            // 3. Считаем размер позиции
-            const positionSize = allowedLossUSD / priceRiskPerUnit;
+            // Расчет для Сценария 1
+            const riskPerTrade1 = drawdownLeft / trades1;
+            const positionSize1 = riskPerTrade1 / priceRiskPerUnit;
 
-            // Выводим результат
-            document.getElementById('lossAmount').innerText = `$${allowedLossUSD.toFixed(2)}`;
-            document.getElementById('positionSize').innerText = positionSize.toFixed(4);
-            document.getElementById('result').style.display = 'block';
+            // Расчет для Сценария 2
+            const riskPerTrade2 = drawdownLeft / trades2;
+            const positionSize2 = riskPerTrade2 / priceRiskPerUnit;
+
+            // Вывод данных в таблицу
+            document.getElementById('resTrades1').innerText = trades1;
+            document.getElementById('resTrades2').innerText = trades2;
+
+            document.getElementById('risk1').innerText = `$${riskPerTrade1.toFixed(2)}`;
+            document.getElementById('risk2').innerText = `$${riskPerTrade2.toFixed(2)}`;
+
+            document.getElementById('size1').innerText = positionSize1.toFixed(4) + " ед.";
+            document.getElementById('size2').innerText = positionSize2.toFixed(4) + " ед.";
+
+            // Показываем таблицу результатов
+            document.getElementById('resultTable').style.display = 'table';
         }
     </script>
 </body>
