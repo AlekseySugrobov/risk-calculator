@@ -86,8 +86,8 @@
         .btn-edit-row { background: none; border: none; color: #007bff; cursor: pointer; font-size: 1.1em; padding: 0; margin: 0; width: auto; }
         .btn-del-row { background: none; border: none; color: #dc3545; cursor: pointer; font-size: 1.1em; padding: 0; margin-left: 8px; width: auto; }
 
-        /* ИСПРАВЛЕННЫЙ DRAWER: теперь он зафиксирован поверх основного контента приложения */
-        .drawer { position: absolute; top: 0; right: -320px; width: 280px; height: 100%; background: #fff; box-shadow: -5px 0 15px rgba(0,0,0,0.1); transition: right 0.3s ease; z-index: 100; padding: 15px; border-left: 1px solid #ddd; box-sizing: border-box; }
+        /* ЖЕСТКОЕ ПОЗИЦИОНИРОВАНИЕ DRAWER ОТНОСИТЕЛЬНО BODY */
+        .drawer { position: absolute; top: 0; right: -320px; width: 290px; height: 100%; background: #fff; box-shadow: -5px 0 15px rgba(0,0,0,0.1); transition: right 0.3s ease; z-index: 100; padding: 15px; border-left: 1px solid #ddd; box-sizing: border-box; }
         .drawer.open { right: 0; }
         .drawer-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.2); display: none; z-index: 90; }
         .drawer-overlay.open { display: block; }
@@ -184,40 +184,8 @@
     </div>
 
     <div id="historyTab" class="tab-content">
-        <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
-        <div class="drawer" id="editDrawer">
-            <div class="drawer-header">
-                <h3 style="margin:0; border:none; padding-bottom:0;">Ред. сделки</h3>
-                <button class="btn-close-drawer" onclick="closeDrawer()">&times;</button>
-            </div>
-            <input type="hidden" id="editTradeIndex">
-            
-            <label>Риск ($):</label>
-            <input type="number" id="editRisk" step="0.01">
-            
-            <label>Результат:</label>
-            <select id="editResult" onchange="toggleEditResultInputs()">
-                <option value="win">Выигрыш</option>
-                <option value="lose">Проиграш</option> <option value="be">Безубыток</option>
-            </select>
-            
-            <div id="editRRBox">
-                <label>R:R:</label>
-                <input type="number" id="editRR" step="0.1">
-            </div>
-            <div id="editBEBox" style="display:none;">
-                <label>Сумма результата ($):</label>
-                <input type="number" id="editBE" step="0.01">
-            </div>
-            
-            <label>Комментарий:</label>
-            <textarea id="editComment"></textarea>
-            
-            <button class="btn-calc" style="background-color:#28a745" onclick="saveEditedTrade()">Сохранить</button>
-        </div>
-
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
-            <h3 style="margin: 0; border: none; padding: 0;">История</h3>
+            <h3 style="margin: 0; border: none; padding: 0;">История сделок</h3>
             <button class="btn-clear" onclick="clearHistory()">Очистить</button>
         </div>
         <div class="history-scroll-container">
@@ -226,6 +194,39 @@
                 <tbody id="historyBody"></tbody>
             </table>
         </div>
+    </div>
+
+    <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+    <div class="drawer" id="editDrawer">
+        <div class="drawer-header">
+            <h3 style="margin:0; border:none; padding-bottom:0;">Ред. сделки</h3>
+            <button class="btn-close-drawer" onclick="closeDrawer()">&times;</button>
+        </div>
+        <input type="hidden" id="editTradeIndex">
+        
+        <label>Риск ($):</label>
+        <input type="number" id="editRisk" step="0.01">
+        
+        <label>Результат:</label>
+        <select id="editResult" onchange="toggleEditResultInputs()">
+            <option value="win">Выигрыш</option>
+            <option value="lose">Проиграш</option>
+            <option value="be">Безубыток</option>
+        </select>
+        
+        <div id="editRRBox">
+            <label>R:R:</label>
+            <input type="number" id="editRR" step="0.1">
+        </div>
+        <div id="editBEBox" style="display:none;">
+            <label>Сумма результата ($):</label>
+            <input type="number" id="editBE" step="0.01">
+        </div>
+        
+        <label>Комментарий:</label>
+        <textarea id="editComment"></textarea>
+        
+        <button class="btn-calc" style="background-color:#28a745" onclick="saveEditedTrade()">Сохранить</button>
     </div>
 
     <script>
@@ -301,7 +302,7 @@
             let trade = {
                 time: new Date().toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}),
                 risk: risk.toFixed(2),
-                resultType: res, // Хранит системное имя: win, lose, be
+                resultType: res,
                 rr: rrValue,
                 change: change.toFixed(2),
                 comment: document.getElementById('tradeComment').value.trim() || "—"
@@ -339,7 +340,6 @@
                 let tr = document.createElement('tr');
                 let cls = t.change > 0 ? 'profit' : (t.change < 0 ? 'loss' : 'breakeven');
                 
-                // Текстовое отображение статуса на русском
                 let displayRes = t.resultType === 'win' ? 'Выигрыш' : (t.resultType === 'lose' ? 'Проиграш' : 'Безубыток');
                 
                 tr.innerHTML = `
@@ -353,28 +353,30 @@
             });
         }
 
-        // ИСПРАВЛЕНО: Теперь данные корректно подставляются, а селекты триггерят правильную видимость полей
         function openDrawer(idx) {
             let t = tradeHistory[idx];
             document.getElementById('editTradeIndex').value = idx;
             document.getElementById('editRisk').value = t.risk;
-            
-            // Задаем точное значение системного типа (win, lose, be)
             document.getElementById('editResult').value = t.resultType;
             
-            // Восстанавливаем R:R или сумму БУ в зависимости от типа
+            // Напрямую чистим и заполняем дочерние инпуты, чтобы избежать склейки старых данных
             if (t.resultType === 'win') {
                 document.getElementById('editRR').value = t.rr || 1;
+                document.getElementById('editBE').value = 0;
             } else if (t.resultType === 'be') {
                 document.getElementById('editBE').value = t.change;
+                document.getElementById('editRR').value = 1;
+            } else {
+                document.getElementById('editRR').value = 1;
+                document.getElementById('editBE').value = 0;
             }
             
             document.getElementById('editComment').value = t.comment;
             
-            // Обновляем видимость зависимых полей в форме редактирования
+            // Принудительно вызываем обновление видимости полей формы
             toggleEditResultInputs();
             
-            // Анимируем появление панели
+            // Показываем панель
             document.getElementById('editDrawer').classList.add('open');
             document.getElementById('drawerOverlay').classList.add('open');
         }
