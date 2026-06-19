@@ -3,29 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Простой калькулятор риска</title>
+    <title>Калькулятор риска и Журнал сделок</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 400px; margin: 60px auto; padding: 25px; border: 1px solid #ddd; border-radius: 12px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        h2 { margin-top: 0; color: #333; text-align: center; }
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 30px auto; padding: 25px; border: 1px solid #ddd; border-radius: 12px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        h2, h3 { margin-top: 0; color: #333; text-align: center; }
+        h3 { margin-top: 25px; text-align: left; border-bottom: 2px solid #eee; padding-bottom: 5px; }
         label { display: block; margin-top: 15px; font-weight: bold; color: #555; }
-        input { width: 100%; padding: 10px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-size: 1em; }
+        input, select { width: 100%; padding: 10px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-size: 1em; }
         .flex-container { display: flex; gap: 15px; }
         .flex-child { flex: 1; }
-        button { width: 100%; padding: 12px; margin-top: 20px; background-color: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1em; font-weight: bold; }
-        button:hover { background-color: #218838; }
-        .result-table { width: 100%; margin-top: 25px; border-collapse: collapse; display: none; }
-        .result-table th, .result-table td { border: 1px solid #eee; padding: 12px; text-align: center; }
-        .result-table th { background-color: #f8f9fa; color: #666; }
+        button { width: 100%; padding: 12px; margin-top: 20px; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1em; font-weight: bold; }
+        .btn-calc { background-color: #007bff; }
+        .btn-calc:hover { background-color: #0056b3; }
+        .btn-add { background-color: #28a745; margin-top: 15px; }
+        .btn-add:hover { background-color: #218838; }
+        .btn-clear { background-color: #dc3545; padding: 6px 12px; font-size: 0.85em; width: auto; margin: 10px 0; }
+        .btn-clear:hover { background-color: #bd2130; }
+        .result-table, .history-table { width: 100%; margin-top: 25px; border-collapse: collapse; }
+        .result-table th, .result-table td, .history-table th, .history-table td { border: 1px solid #eee; padding: 12px; text-align: center; }
+        .result-table th, .history-table th { background-color: #f8f9fa; color: #666; }
         .highlight { color: #dc3545; font-weight: bold; font-size: 1.1em; }
+        .profit { color: #28a745; font-weight: bold; }
+        .loss { color: #dc3545; font-weight: bold; }
+        .radio-box { margin-top: 10px; padding: 10px; border: 1px solid #eee; border-radius: 6px; }
     </style>
 </head>
 <body>
 
-    <h2>Риск на сделку</h2>
+    <h2>Риск-менеджер и Журнал</h2>
     
-    <label for="drawdownLeft">Остаток до drawdown ($):</label>
-    <input type="number" id="drawdownLeft" value="500">
+    <!-- Блок состояния депозита -->
+    <div class="flex-container">
+        <div class="flex-child">
+            <label for="drawdownLeft">Остаток до drawdown ($):</label>
+            <input type="number" id="drawdownLeft" value="500">
+        </div>
+    </div>
 
+    <!-- Настройка сценариев -->
     <div class="flex-container">
         <div class="flex-child">
             <label for="trades1">Сделок (Сц. 1):</label>
@@ -37,9 +52,10 @@
         </div>
     </div>
 
-    <button onclick="calculateRiskOnly()">Рассчитать риск</button>
+    <button class="btn-calc" onclick="calculateRiskOnly()">Рассчитать риски</button>
 
-    <table class="result-table" id="resultTable">
+    <!-- Таблица расчетов -->
+    <table class="result-table" id="resultTable" style="display: none;">
         <thead>
             <tr>
                 <th>Сценарий</th>
@@ -61,8 +77,59 @@
         </tbody>
     </table>
 
+    <!-- Блок добавления сделки в журнал -->
+    <h3>Добавить сделку в журнал</h3>
+    
+    <label for="chosenScenario">Какой сценарий использовали?</label>
+    <select id="chosenScenario">
+        <option value="1">Сценарий 1</option>
+        <option value="2">Сценарий 2</option>
+    </select>
+
+    <label for="tradeResult">Результат сделки:</label>
+    <select id="tradeResult">
+        <option value="win">Выиграл (Take Profit)</option>
+        <option value="lose">Проиграл (Stop Loss)</option>
+    </select>
+
+    <div id="rewardRatioBox">
+        <label for="rewardRatio">Коэффициент прибыли (R:R, например 3 если тейк в 3 раза больше стопа):</label>
+        <input type="number" id="rewardRatio" value="3" min="1">
+    </div>
+
+    <button class="btn-add" onclick="addTrade()">Зафиксировать сделку в журнал</button>
+
+    <!-- Журнал сделок -->
+    <h3>История сделок</h3>
+    <button class="btn-clear" onclick="clearHistory()">Очистить журнал</button>
+    
+    <table class="history-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Сценарий</th>
+                <th>Риск</th>
+                <th>Результат</th>
+                <th>Изменение ($)</th>
+            </tr>
+        </thead>
+        <tbody id="historyBody">
+            <!-- Сюда будут добавляться строки из JS -->
+        </tbody>
+    </table>
+
     <script>
-        // Функция для расчета и сохранения данных
+        // Глобальные переменные для хранения текущих рассчитанных рисков
+        let currentRisk1 = 0;
+        let currentRisk2 = 0;
+        let tradeHistory = [];
+
+        // Переключение видимости R:R в зависимости от исхода сделки
+        document.getElementById('tradeResult').addEventListener('change', function() {
+            const ratioBox = document.getElementById('rewardRatioBox');
+            ratioBox.style.display = this.value === 'win' ? 'block' : 'none';
+        });
+
         function calculateRiskOnly() {
             const drawdownLeft = parseFloat(document.getElementById('drawdownLeft').value);
             const trades1 = parseInt(document.getElementById('trades1').value);
@@ -73,47 +140,98 @@
                 return;
             }
 
-            if (trades1 <= 0 || trades2 <= 0) {
-                alert("Количество сделок должно быть больше нуля");
-                return;
-            }
+            currentRisk1 = drawdownLeft / trades1;
+            currentRisk2 = drawdownLeft / trades2;
 
-            // Сохраняем введенные значения в память браузера
+            // Сохраняем настройки формы
             localStorage.setItem('drawdownLeft', drawdownLeft);
             localStorage.setItem('trades1', trades1);
             localStorage.setItem('trades2', trades2);
 
-            // Считаем риск
-            const riskPerTrade1 = drawdownLeft / trades1;
-            const riskPerTrade2 = drawdownLeft / trades2;
-
-            // Выводим в таблицу
             document.getElementById('resTrades1').innerText = trades1;
             document.getElementById('resTrades2').innerText = trades2;
-
-            document.getElementById('risk1').innerText = `$${riskPerTrade1.toFixed(2)}`;
-            document.getElementById('risk2').innerText = `$${riskPerTrade2.toFixed(2)}`;
-
-            // Показываем таблицу результатов
+            document.getElementById('risk1').innerText = `$${currentRisk1.toFixed(2)}`;
+            document.getElementById('risk2').innerText = `$${currentRisk2.toFixed(2)}`;
             document.getElementById('resultTable').style.display = 'table';
         }
 
-        // Функция автоматической загрузки данных при открытии страницы
+        function addTrade() {
+            // Перед добавлением убедимся, что риски рассчитаны
+            if (currentRisk1 === 0 || currentRisk2 === 0) {
+                calculateRiskOnly();
+            }
+
+            const drawdownLeftInput = document.getElementById('drawdownLeft');
+            let drawdownLeft = parseFloat(drawdownLeftInput.value);
+            
+            const scenario = document.getElementById('chosenScenario').value;
+            const result = document.getElementById('tradeResult').value;
+            const ratio = parseFloat(document.getElementById('rewardRatio').value) || 1;
+
+            // Определяем базовый риск для выбранного сценария
+            const baseRisk = scenario === "1" ? currentRisk1 : currentRisk2;
+            
+            let changeUSD = 0;
+            if (result === 'win') {
+                // Прибыль = риск умноженный на коэффициент R:R
+                changeUSD = baseRisk * ratio;
+                drawdownLeft += changeUSD;
+            } else {
+                // Убыток = строго величина риска
+                changeUSD = -baseRisk;
+                drawdownLeft += changeUSD; // уменьшаем остаток до просадки
+            }
+
+            // Обновляем значение в инпуте и пересчитываем риски для следующих сделок
+            drawdownLeftInput.value = drawdownLeft.toFixed(2);
+            calculateRiskOnly();
+
+            // Добавляем запись в массив истории
+            const newTrade = {
+                scenario: scenario,
+                risk: baseRisk.toFixed(2),
+                result: result === 'win' ? 'Выигрыш' : 'Проигрыш',
+                change: changeUSD.toFixed(2)
+            };
+
+            tradeHistory.push(newTrade);
+            localStorage.setItem('tradeHistory', JSON.stringify(tradeHistory));
+            
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const body = document.getElementById('historyBody');
+            body.innerHTML = '';
+
+            tradeHistory.forEach((trade, index) => {
+                const row = document.createElement('tr');
+                const isWin = parseFloat(trade.change) > 0;
+                
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>Сценарий ${trade.scenario}</td>
+                    <td>$${trade.risk}</td>
+                    <td class="${isWin ? 'profit' : 'loss'}">${trade.result}</td>
+                    <td class="${isWin ? 'profit' : 'loss'}">${isWin ? '+' : ''}$${trade.change}</td>
+                `;
+                body.appendChild(row);
+            });
+        }
+
+        function clearHistory() {
+            if (confirm("Вы уверены, что хотите полностью очистить журнал сделок?")) {
+                tradeHistory = [];
+                localStorage.removeItem('tradeHistory');
+                renderHistory();
+            }
+        }
+
+        // Загрузка состояния при старте
         window.onload = function() {
             const savedDrawdown = localStorage.getItem('drawdownLeft');
             const savedTrades1 = localStorage.getItem('trades1');
             const savedTrades2 = localStorage.getItem('trades2');
+            const savedHistory = localStorage.getItem('tradeHistory');
 
-            // Если в памяти есть сохраненные данные, подставляем их в поля и сразу считаем
-            if (savedDrawdown !== null && savedTrades1 !== null && savedTrades2 !== null) {
-                document.getElementById('drawdownLeft').value = savedDrawdown;
-                document.getElementById('trades1').value = savedTrades1;
-                document.getElementById('trades2').value = savedTrades2;
-                
-                // Автоматически запускаем расчет, чтобы таблица сразу была видна
-                calculateRiskOnly();
-            }
-        };
-    </script>
-</body>
-</html>
+            if (savedDrawdown !== null) document.getElementById('drawdownLeft').value = savedDrawdown;
