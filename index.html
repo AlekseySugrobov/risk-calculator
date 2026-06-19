@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Калькулятор риска и Журнал</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 650px; margin: 15px auto; padding: 15px 20px; border: 1px solid #ddd; border-radius: 12px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: relative; overflow-x: hidden; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; max-width: 650px; margin: 15px auto; padding: 15px 20px; border: 1px solid #ddd; border-radius: 12px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: relative; overflow: hidden; box-sizing: border-box; }
         h2 { margin-top: 0; margin-bottom: 12px; color: #333; text-align: center; font-size: 1.4em; }
         h3 { margin-top: 12px; margin-bottom: 8px; text-align: left; border-bottom: 2px solid #eee; padding-bottom: 3px; font-size: 1.1em; }
         label { display: block; margin-top: 8px; font-weight: bold; color: #555; font-size: 0.9em; }
@@ -86,7 +86,8 @@
         .btn-edit-row { background: none; border: none; color: #007bff; cursor: pointer; font-size: 1.1em; padding: 0; margin: 0; width: auto; }
         .btn-del-row { background: none; border: none; color: #dc3545; cursor: pointer; font-size: 1.1em; padding: 0; margin-left: 8px; width: auto; }
 
-        .drawer { position: absolute; top: 0; right: -300px; width: 280px; height: 100%; background: #fff; box-shadow: -5px 0 15px rgba(0,0,0,0.1); transition: right 0.3s ease; z-index: 100; padding: 15px; border-left: 1px solid #ddd; box-sizing: border-box; }
+        /* ИСПРАВЛЕННЫЙ DRAWER: теперь он зафиксирован поверх основного контента приложения */
+        .drawer { position: absolute; top: 0; right: -320px; width: 280px; height: 100%; background: #fff; box-shadow: -5px 0 15px rgba(0,0,0,0.1); transition: right 0.3s ease; z-index: 100; padding: 15px; border-left: 1px solid #ddd; box-sizing: border-box; }
         .drawer.open { right: 0; }
         .drawer-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.2); display: none; z-index: 90; }
         .drawer-overlay.open { display: block; }
@@ -186,28 +187,32 @@
         <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
         <div class="drawer" id="editDrawer">
             <div class="drawer-header">
-                <h3 style="margin:0; border:none;">Ред. сделки</h3>
+                <h3 style="margin:0; border:none; padding-bottom:0;">Ред. сделки</h3>
                 <button class="btn-close-drawer" onclick="closeDrawer()">&times;</button>
             </div>
             <input type="hidden" id="editTradeIndex">
+            
             <label>Риск ($):</label>
             <input type="number" id="editRisk" step="0.01">
+            
             <label>Результат:</label>
             <select id="editResult" onchange="toggleEditResultInputs()">
                 <option value="win">Выигрыш</option>
-                <option value="lose">Проиграл</option>
-                <option value="be">Безубыток</option>
+                <option value="lose">Проиграш</option> <option value="be">Безубыток</option>
             </select>
+            
             <div id="editRRBox">
                 <label>R:R:</label>
                 <input type="number" id="editRR" step="0.1">
             </div>
             <div id="editBEBox" style="display:none;">
-                <label>Сумма ($):</label>
+                <label>Сумма результата ($):</label>
                 <input type="number" id="editBE" step="0.01">
             </div>
+            
             <label>Комментарий:</label>
             <textarea id="editComment"></textarea>
+            
             <button class="btn-calc" style="background-color:#28a745" onclick="saveEditedTrade()">Сохранить</button>
         </div>
 
@@ -286,15 +291,18 @@
             if(risk <= 0 && res !== 'be') return alert("Риск должен быть > 0");
 
             let change = 0;
-            if(res === 'win') change = risk * (parseFloat(document.getElementById('rewardRatio').value) || 1);
+            let rrValue = document.getElementById('rewardRatio').value;
+            let beValue = document.getElementById('beAmount').value;
+
+            if(res === 'win') change = risk * (parseFloat(rrValue) || 1);
             else if(res === 'lose') change = -risk;
-            else change = parseFloat(document.getElementById('beAmount').value) || 0;
+            else change = parseFloat(beValue) || 0;
 
             let trade = {
                 time: new Date().toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}),
                 risk: risk.toFixed(2),
-                resultType: res,
-                rr: document.getElementById('rewardRatio').value,
+                resultType: res, // Хранит системное имя: win, lose, be
+                rr: rrValue,
                 change: change.toFixed(2),
                 comment: document.getElementById('tradeComment').value.trim() || "—"
             };
@@ -330,7 +338,10 @@
                 let realIdx = tradeHistory.length - 1 - i;
                 let tr = document.createElement('tr');
                 let cls = t.change > 0 ? 'profit' : (t.change < 0 ? 'loss' : 'breakeven');
-                let displayRes = t.resultType === 'win' ? 'Выигрыш' : (t.resultType === 'lose' ? 'Проигрыш' : 'Безубыток');
+                
+                // Текстовое отображение статуса на русском
+                let displayRes = t.resultType === 'win' ? 'Выигрыш' : (t.resultType === 'lose' ? 'Проиграш' : 'Безубыток');
+                
                 tr.innerHTML = `
                     <td>${realIdx + 1}</td><td class="time-text">${t.time}</td>
                     <td>$${t.risk}</td><td class="${cls}">${displayRes}</td>
@@ -342,15 +353,28 @@
             });
         }
 
+        // ИСПРАВЛЕНО: Теперь данные корректно подставляются, а селекты триггерят правильную видимость полей
         function openDrawer(idx) {
             let t = tradeHistory[idx];
             document.getElementById('editTradeIndex').value = idx;
             document.getElementById('editRisk').value = t.risk;
+            
+            // Задаем точное значение системного типа (win, lose, be)
             document.getElementById('editResult').value = t.resultType;
-            document.getElementById('editRR').value = t.rr || 1;
-            document.getElementById('editBE').value = t.change;
+            
+            // Восстанавливаем R:R или сумму БУ в зависимости от типа
+            if (t.resultType === 'win') {
+                document.getElementById('editRR').value = t.rr || 1;
+            } else if (t.resultType === 'be') {
+                document.getElementById('editBE').value = t.change;
+            }
+            
             document.getElementById('editComment').value = t.comment;
+            
+            // Обновляем видимость зависимых полей в форме редактирования
             toggleEditResultInputs();
+            
+            // Анимируем появление панели
             document.getElementById('editDrawer').classList.add('open');
             document.getElementById('drawerOverlay').classList.add('open');
         }
@@ -366,8 +390,9 @@
             let res = document.getElementById('editResult').value;
             let risk = parseFloat(document.getElementById('editRisk').value) || 0;
             let newChange = 0;
+            let rrValue = document.getElementById('editRR').value;
 
-            if(res === 'win') newChange = risk * (parseFloat(document.getElementById('editRR').value) || 1);
+            if(res === 'win') newChange = risk * (parseFloat(rrValue) || 1);
             else if(res === 'lose') newChange = -risk;
             else newChange = parseFloat(document.getElementById('editBE').value) || 0;
 
@@ -375,7 +400,7 @@
                 ...tradeHistory[idx],
                 risk: risk.toFixed(2),
                 resultType: res,
-                rr: document.getElementById('editRR').value,
+                rr: res === 'win' ? rrValue : '',
                 change: newChange.toFixed(2),
                 comment: document.getElementById('editComment').value.trim()
             };
