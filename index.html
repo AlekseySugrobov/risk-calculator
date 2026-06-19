@@ -11,6 +11,12 @@
         label { display: block; margin-top: 15px; font-weight: bold; color: #555; }
         input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-size: 1em; font-family: Arial, sans-serif; }
         textarea { resize: vertical; height: 60px; }
+        
+        /* Радио-кнопки (Challenge / Funded) */
+        .radio-group { display: flex; gap: 20px; margin-top: 8px; background: #f8f9fa; padding: 10px; border-radius: 6px; border: 1px solid #eee; }
+        .radio-label { display: flex; align-items: center; gap: 8px; margin-top: 0; font-weight: normal; cursor: pointer; color: #333; }
+        .radio-label input { width: auto; margin-top: 0; cursor: pointer; }
+
         .flex-container { display: flex; gap: 15px; }
         .flex-child { flex: 1; }
         button { width: 100%; padding: 12px; margin-top: 20px; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1em; font-weight: bold; }
@@ -20,9 +26,12 @@
         .btn-add:hover { background-color: #218838; }
         .btn-clear { background-color: #dc3545; padding: 6px 12px; font-size: 0.85em; width: auto; margin: 10px 0; }
         .btn-clear:hover { background-color: #bd2130; }
+        
         .result-table, .history-table { width: 100%; margin-top: 25px; border-collapse: collapse; }
         .result-table th, .result-table td, .history-table th, .history-table td { border: 1px solid #eee; padding: 10px; text-align: center; font-size: 0.95em; }
         .result-table th, .history-table th { background-color: #f8f9fa; color: #666; }
+        
+        /* Стилизация подсветки */
         .highlight { color: #dc3545; font-weight: bold; font-size: 1.1em; }
         .profit { color: #28a745; font-weight: bold; }
         .loss { color: #dc3545; font-weight: bold; }
@@ -35,8 +44,26 @@
 
     <h2>Риск-менеджер и Журнал</h2>
     
-    <label for="drawdownLeft">Остаток до drawdown ($):</label>
-    <input type="number" id="drawdownLeft" value="500" step="0.01">
+    <label>Тип аккаунта:</label>
+    <div class="radio-group">
+        <label class="radio-label">
+            <input type="radio" name="accountType" value="challenge" checked onchange="toggleAccountType()"> Challenge
+        </label>
+        <label class="radio-label">
+            <input type="radio" name="accountType" value="funded" onchange="toggleAccountType()"> Funded
+        </label>
+    </div>
+
+    <div class="flex-container">
+        <div class="flex-child">
+            <label for="drawdownLeft">Остаток до drawdown ($):</label>
+            <input type="number" id="drawdownLeft" value="500" step="0.01">
+        </div>
+        <div class="flex-child" id="maxDrawdownBox">
+            <label for="maxDrawdown">Макс. Drawdown (Лимит, $):</label>
+            <input type="number" id="maxDrawdown" value="500" step="0.01">
+        </div>
+    </div>
 
     <div class="flex-container">
         <div class="flex-child">
@@ -133,10 +160,16 @@
         let calcRisk2 = 0;
         let tradeHistory = [];
 
-        
         window.onload = function() {
+            if (localStorage.getItem('accountType')) {
+                const savedType = localStorage.getItem('accountType');
+                document.querySelector(`input[name="accountType"][value="${savedType}"]`).checked = true;
+            }
             if (localStorage.getItem('drawdownLeft')) {
                 document.getElementById('drawdownLeft').value = localStorage.getItem('drawdownLeft');
+            }
+            if (localStorage.getItem('maxDrawdown')) {
+                document.getElementById('maxDrawdown').value = localStorage.getItem('maxDrawdown');
             }
             if (localStorage.getItem('trades1')) {
                 document.getElementById('trades1').value = localStorage.getItem('trades1');
@@ -147,9 +180,22 @@
             if (localStorage.getItem('tradeHistory')) {
                 tradeHistory = JSON.parse(localStorage.getItem('tradeHistory'));
             }
+            toggleAccountType();
             calculateRiskOnly();
             renderHistory();
         };
+
+        function toggleAccountType() {
+            const accountType = document.querySelector('input[name="accountType"]:checked').value;
+            const maxDrawdownBox = document.getElementById('maxDrawdownBox');
+            
+            if (accountType === 'challenge') {
+                maxDrawdownBox.style.display = 'block';
+            } else {
+                maxDrawdownBox.style.display = 'none';
+            }
+            localStorage.setItem('accountType', accountType);
+        }
 
         function toggleResultInputs() {
             const resultType = document.getElementById('tradeResult').value;
@@ -165,7 +211,6 @@
             const scenario = document.getElementById('chosenScenario').value;
             const actualRiskInput = document.getElementById('actualRisk');
             if (actualRiskInput) {
-                
                 actualRiskInput.value = scenario === "1" ? calcRisk1.toFixed(2) : calcRisk2.toFixed(2);
             }
         }
@@ -179,6 +224,7 @@
             calcRisk2 = drawdownLeft / trades2;
 
             localStorage.setItem('drawdownLeft', drawdownLeft);
+            localStorage.setItem('maxDrawdown', parseFloat(document.getElementById('maxDrawdown').value) || 0);
             localStorage.setItem('trades1', trades1);
             localStorage.setItem('trades2', trades2);
 
@@ -194,6 +240,8 @@
         function addTrade() {
             const drawdownLeftInput = document.getElementById('drawdownLeft');
             let drawdownLeft = parseFloat(drawdownLeftInput.value) || 0;
+            const accountType = document.querySelector('input[name="accountType"]:checked').value;
+            const maxDrawdown = parseFloat(document.getElementById('maxDrawdown').value) || 0;
             
             const result = document.getElementById('tradeResult').value;
             const ratio = parseFloat(document.getElementById('rewardRatio').value) || 1;
@@ -228,9 +276,13 @@
             }
 
             drawdownLeft += changeUSD;
+
+            // Ограничение лимита просадки для Challenge аккаунта
+            if (accountType === 'challenge' && drawdownLeft > maxDrawdown) {
+                drawdownLeft = maxDrawdown;
+            }
+
             drawdownLeftInput.value = drawdownLeft.toFixed(2);
-            
-            
             calculateRiskOnly();
 
             const now = new Date();
@@ -252,18 +304,15 @@
             renderHistory();
         }
 
-        
         function renderHistory() {
             const body = document.getElementById('historyBody');
             if (!body) return;
             
             body.innerHTML = '';
             
-            
             for (let i = tradeHistory.length - 1; i >= 0; i--) {
                 const trade = tradeHistory[i];
                 const tr = document.createElement('tr');
-                
                 
                 let changeStyle = 'breakeven';
                 if (parseFloat(trade.change) > 0) changeStyle = 'profit';
@@ -281,7 +330,6 @@
             }
         }
 
-    
         function clearHistory() {
             if (confirm("Вы уверены, что хотите очистить весь журнал сделок?")) {
                 tradeHistory = [];
