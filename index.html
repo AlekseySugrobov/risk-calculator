@@ -60,7 +60,6 @@
         textarea { padding: 10px 14px; resize: vertical; height: 60px; }
         input[type="number"]:focus, select:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
 
-        /* Переключатель аккаунтов (Пилл-табы) */
         .account-switch { display: flex; background: var(--neutral-bg); padding: 4px; border-radius: var(--radius); margin-top: 4px; height: 42px; box-sizing: border-box; }
         .account-switch label { width: 50%; text-align: center; margin: 0; padding: 6px 0; cursor: pointer; border-radius: calc(var(--radius) - 2px); font-size: 0.9em; font-weight: 600; color: var(--text-muted); transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
         .account-switch input { display: none; }
@@ -78,7 +77,6 @@
         .btn-clear { background-color: #f3f4f6; color: var(--danger); font-size: 0.85em; width: auto; margin: 0; padding: 6px 12px; }
         .btn-clear:hover { background-color: var(--danger-bg); }
         
-        /* Карточки сценариев вместо скучной таблицы */
         .scenario-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
         .scenario-card { background: var(--neutral-bg); padding: 14px; border-radius: var(--radius); border: 1px solid var(--border); text-align: center; transition: all 0.2s; }
         .scenario-card.active { border-color: var(--primary); background: #f5f3ff; }
@@ -86,7 +84,6 @@
         .scenario-card .sc-value { font-size: 1.4em; font-weight: 700; color: var(--primary); margin-top: 4px; }
         .scenario-card .sc-sub { font-size: 0.8em; color: var(--neutral); margin-top: 2px; }
 
-        /* Вкладки (Главные табы) */
         .tabs-header { display: flex; gap: 8px; margin-bottom: 20px; background: var(--neutral-bg); padding: 4px; border-radius: var(--radius); }
         .tab-btn { flex: 1; padding: 8px; font-size: 0.9em; font-weight: 600; background: transparent; color: var(--text-muted); margin: 0; border-radius: calc(var(--radius) - 2px); }
         .tab-btn:hover { color: var(--text-main); }
@@ -94,14 +91,12 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        /* Стилизация Истории Сделок */
         .history-scroll-container { max-height: 380px; overflow-y: auto; margin-top: 12px; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
         .history-table { width: 100%; border-collapse: collapse; margin-top: 0; }
         .history-table th { background-color: #fafafa; color: var(--text-muted); font-weight: 600; font-size: 0.8em; text-transform: uppercase; letter-spacing: 0.05em; padding: 12px 8px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
         .history-table td { padding: 12px 8px; text-align: center; font-size: 0.9em; border-bottom: 1px solid var(--border); color: var(--text-main); vertical-align: middle; }
         .history-table tr:last-child td { border-bottom: none; }
         
-        /* Красивые бейджи для статусов сделок */
         .badge { display: inline-flex; align-items: center; justify-content: center; padding: 4px 8px; border-radius: 20px; font-size: 0.8em; font-weight: 600; min-width: 80px; }
         .badge.profit { background-color: var(--success-bg); color: var(--success-text); }
         .badge.loss { background-color: var(--danger-bg); color: var(--danger-text); }
@@ -119,12 +114,31 @@
         .btn-edit-row:hover { opacity: 0.7; }
         .btn-del-row:hover { color: var(--danger); }
 
-        /* ПРЕМИАЛЬНЫЙ DRAWER С ПЛАВНЫМ ВЫЕЗДОМ И БЛЮРОМ ЗАДНИКА */
+        /* ИСПРАВЛЕННЫЕ СТИЛИ DRAWER: Скрытие через visibility и opacity для чистого закрытия */
         .drawer-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.15); backdrop-filter: blur(4px); display: none; z-index: 90; }
         .drawer-overlay.open { display: block; }
         
-        .drawer { position: absolute; top: 0; right: -340px; width: 310px; height: 100%; background: #fff; box-shadow: -10px 0 30px rgba(0,0,0,0.08); transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 100; padding: 24px; border-left: 1px solid var(--border); box-sizing: border-box; display: block; visibility: hidden; }
-        .drawer.open { right: 0; visibility: visible; }
+        .drawer { 
+            position: absolute; 
+            top: 0; 
+            right: -340px; 
+            width: 310px; 
+            height: 100%; 
+            background: #fff; 
+            box-shadow: -10px 0 30px rgba(0,0,0,0.08); 
+            transition: right 0.25s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.25s, opacity 0.25s; 
+            z-index: 100; 
+            padding: 24px; 
+            border-left: 1px solid var(--border); 
+            box-sizing: border-box; 
+            visibility: hidden;
+            opacity: 0;
+        }
+        .drawer.open { 
+            right: 0; 
+            visibility: visible; 
+            opacity: 1;
+        }
         
         .drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
         .btn-close-drawer { background: none; border: none; font-size: 1.4em; cursor: pointer; color: var(--neutral); width: auto; padding: 0; margin: 0; }
@@ -211,7 +225,7 @@
                 <label for="tradeResult">Результат сделки</label>
                 <select id="tradeResult" onchange="toggleResultInputs()">
                     <option value="win">Выигрыш (Take Profit)</option>
-                    <option value="lose">Проигрыш (Stop Loss)</option>
+                    <option value="lose">Проиграш (Stop Loss)</option>
                     <option value="be">Безубыток</option>
                 </select>
             </div>
@@ -227,7 +241,6 @@
         <label for="tradeComment">Комментарий к сделке</label>
         <textarea id="tradeComment" placeholder="Контекст входа, паттерн или эмоции..."></textarea>
         <button class="btn-add" onclick="addTrade()">
-            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 "></svg>
             Зафиксировать в журнал
         </button>
     </div>
@@ -445,13 +458,19 @@
             
             toggleEditResultInputs();
             
-            document.getElementById('drawerOverlay').classList.add('open');
-            document.getElementById('editDrawer').classList.add('open');
+            document.getElementById('drawerOverlay').style.display = 'block';
+            setTimeout(() => {
+                document.getElementById('drawerOverlay').classList.add('open');
+                document.getElementById('editDrawer').classList.add('open');
+            }, 10);
         }
 
         function closeDrawer() {
             document.getElementById('editDrawer').classList.remove('open');
             document.getElementById('drawerOverlay').classList.remove('open');
+            setTimeout(() => {
+                document.getElementById('drawerOverlay').style.display = 'none';
+            }, 250);
         }
 
         function saveEditedTrade() {
