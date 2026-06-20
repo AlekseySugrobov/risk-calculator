@@ -39,10 +39,9 @@
             line-height: 1.5;
         }
 
-        /* Главный контейнер с увеличенной высотой для исключения скролла в попапе */
         .main-container {
             width: 100%;
-            min-height: 520px; /* Увеличили высоту, чтобы боковой панели хватало места */
+            min-height: 520px;
             background-color: var(--bg-main); 
             padding: 24px; 
             border-radius: 16px; 
@@ -164,7 +163,6 @@
         }
         .drawer-overlay.open { display: block; }
         
-        /* Исправленная панель: теперь на flex-компонентах, кнопка всегда снизу */
         .drawer { 
             position: absolute;
             top: 0;
@@ -177,7 +175,7 @@
             border-left: 1px solid var(--border); 
             box-sizing: border-box; 
             display: none; 
-            flex-direction: column; /* Элементы выстраиваются строго в столбик */
+            flex-direction: column; 
             z-index: 100;
         }
         .drawer.open { 
@@ -188,7 +186,6 @@
         .btn-close-drawer { background: none; border: none; font-size: 1.4em; cursor: pointer; color: var(--neutral); width: auto; padding: 0; margin: 0; }
         .btn-close-drawer:hover { color: var(--text-main); }
 
-        /* Кнопка "Сохранить" намертво закреплена внизу без наездов */
         .btn-save-drawer { 
             background-color: #10b981; 
             margin-top: auto; 
@@ -201,7 +198,6 @@
 <body>
 
     <div class="app-wrapper">
-        
         <div class="main-container">
             <h2>RiskManager PRO</h2>
 
@@ -215,33 +211,33 @@
                     <div class="flex-child">
                         <label>Тип аккаунта</label>
                         <div class="account-switch">
-                            <label><input type="radio" name="accountType" value="challenge" checked onchange="toggleAccountType()">Challenge</label>
-                            <label><input type="radio" name="accountType" value="funded" onchange="toggleAccountType()">Funded</label>
+                            <label><input type="radio" name="accountType" value="challenge" checked onchange="toggleAccountType(); calculateRiskOnly();">Challenge</label>
+                            <label><input type="radio" name="accountType" value="funded" onchange="toggleAccountType(); calculateRiskOnly();">Funded</label>
                         </div>
                     </div>
                     <div class="flex-child">
                         <label for="accountBalance">Текущий баланс ($)</label>
-                        <input type="number" id="accountBalance" value="10000" step="0.01">
+                        <input type="number" id="accountBalance" value="10000" step="0.01" oninput="calculateRiskOnly()">
                     </div>
                 </div>
                 <div class="flex-container">
                     <div class="flex-child">
                         <label for="drawdownLeft">Остаток до drawdown ($)</label>
-                        <input type="number" id="drawdownLeft" value="500" step="0.01">
+                        <input type="number" id="drawdownLeft" value="500" step="0.01" oninput="calculateRiskOnly()">
                     </div>
                     <div class="flex-child" id="maxDrawdownBox">
                         <label for="maxDrawdown">Макс. Drawdown ($)</label>
-                        <input type="number" id="maxDrawdown" value="500" step="0.01">
+                        <input type="number" id="maxDrawdown" value="500" step="0.01" oninput="calculateRiskOnly()">
                     </div>
                 </div>
                 <div class="flex-container">
                     <div class="flex-child">
                         <label for="trades1">Сделок (Сценарий 1)</label>
-                        <input type="number" id="trades1" value="4">
+                        <input type="number" id="trades1" value="4" oninput="calculateRiskOnly()">
                     </div>
                     <div class="flex-child">
                         <label for="trades2">Сделок (Сценарий 2)</label>
-                        <input type="number" id="trades2" value="6">
+                        <input type="number" id="trades2" value="6" oninput="calculateRiskOnly()">
                     </div>
                 </div>
                 <button class="btn-calc" onclick="calculateRiskOnly()">
@@ -280,7 +276,7 @@
                         <label for="tradeResult">Результат сделки</label>
                         <select id="tradeResult" onchange="toggleResultInputs()">
                             <option value="win">Выигрыш (Take Profit)</option>
-                            <option value="lose">Проиграш (Stop Loss)</option>
+                            <option value="lose">Проигрыш (Stop Loss)</option>
                             <option value="be">Безубыток</option>
                         </select>
                     </div>
@@ -329,7 +325,7 @@
                 <label>Результат</label>
                 <select id="editResult" onchange="toggleEditResultInputs()">
                     <option value="win">Выигрыш</option>
-                    <option value="lose">Проиграл</option>
+                    <option value="lose">Проигрыш</option>
                     <option value="be">Безубыток</option>
                 </select>
                 
@@ -347,7 +343,6 @@
                 
                 <button class="btn-save-drawer" onclick="saveEditedTrade()">Сохранить изменения</button>
             </div>
-
         </div>
     </div>
 
@@ -357,18 +352,29 @@
         window.onload = function() {
             ['accountType', 'accountBalance', 'drawdownLeft', 'maxDrawdown', 'trades1', 'trades2'].forEach(key => {
                 let val = localStorage.getItem(key);
-                if(val) {
-                    if(key === 'accountType') document.querySelector(`input[value="${val}"]`).checked = true;
-                    else document.getElementById(key).value = val;
+                if(val !== null) {
+                    if(key === 'accountType') {
+                        let el = document.querySelector(`input[value="${val}"]`);
+                        if(el) el.checked = true;
+                    } else {
+                        let el = document.getElementById(key);
+                        if(el) el.value = val;
+                    }
                 }
             });
-            if(localStorage.getItem('tradeHistory')) tradeHistory = JSON.parse(localStorage.getItem('tradeHistory'));
-            toggleAccountType(); calculateRiskOnly(); renderHistory();
+            if(localStorage.getItem('tradeHistory')) {
+                tradeHistory = JSON.parse(localStorage.getItem('tradeHistory'));
+            }
+            toggleAccountType(); 
+            calculateRiskOnly(); 
+            renderHistory();
         };
 
         function switchTab(tabId, btn) {
             document.querySelectorAll('.tab-content, .tab-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active'); btn.classList.add('active'); closeDrawer();
+            document.getElementById(tabId).classList.add('active'); 
+            btn.classList.add('active'); 
+            closeDrawer();
         }
 
         function toggleAccountType() {
@@ -398,7 +404,10 @@
             let dl = parseFloat(document.getElementById('drawdownLeft').value) || 0;
             let t1 = parseInt(document.getElementById('trades1').value) || 4;
             let t2 = parseInt(document.getElementById('trades2').value) || 6;
-            calcRisk1 = dl / t1; calcRisk2 = dl / t2;
+            
+            calcRisk1 = t1 > 0 ? dl / t1 : 0; 
+            calcRisk2 = t2 > 0 ? dl / t2 : 0;
+
             ['accountBalance', 'drawdownLeft', 'maxDrawdown', 'trades1', 'trades2'].forEach(id => {
                 let el = document.getElementById(id);
                 if(el) localStorage.setItem(id, el.value);
@@ -429,8 +438,8 @@
             let trade = {
                 time: new Date().toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}),
                 risk: risk.toFixed(2),
-                resultType: res,
-                rr: rrValue,
+                resultType: res, // Всегда строго 'win', 'lose', 'be'
+                rr: res === 'win' ? rrValue : '',
                 change: change.toFixed(2),
                 comment: document.getElementById('tradeComment').value.trim() || "—"
             };
@@ -449,9 +458,11 @@
 
             let newBal = parseFloat(bal.value) + parseFloat(change);
             let newDdl = parseFloat(ddl.value) + parseFloat(change);
+            
             if(type === 'challenge' && newDdl > max) newDdl = max;
 
-            bal.value = newBal.toFixed(2); ddl.value = newDdl.toFixed(2);
+            bal.value = newBal.toFixed(2); 
+            ddl.value = newDdl.toFixed(2);
             calculateRiskOnly();
         }
 
@@ -461,7 +472,9 @@
         }
 
         function renderHistory() {
-            let body = document.getElementById('historyBody'); body.innerHTML = '';
+            let body = document.getElementById('historyBody'); 
+            body.innerHTML = '';
+            
             tradeHistory.slice().reverse().forEach((t, i) => {
                 let realIdx = tradeHistory.length - 1 - i;
                 let tr = document.createElement('tr');
@@ -470,19 +483,16 @@
                 let bCls = 'breakeven'; let vCls = 'val-neutral'; let displayRes = 'Безубыток';
                 let rowIndicatorClass = 'row-neutral';
 
-                if (t.resultType === 'win' || t.resultType === 'Выигрыш') { 
+                if (t.resultType === 'win') { 
                     bCls = 'profit'; vCls = 'val-profit'; displayRes = 'Выигрыш'; 
-                }
-                if (t.resultType === 'lose' || t.resultType === 'Проиграл' || t.resultType === 'Проиграш') { 
-                    bCls = 'loss'; vCls = 'val-loss'; displayRes = 'Проиграл'; 
+                } else if (t.resultType === 'lose') { 
+                    bCls = 'loss'; vCls = 'val-loss'; displayRes = 'Проигрыш'; 
                 }
 
                 if (changeNum > 0) {
                     rowIndicatorClass = 'row-positive';
                 } else if (changeNum < 0) {
                     rowIndicatorClass = 'row-negative';
-                } else {
-                    rowIndicatorClass = 'row-neutral';
                 }
                 
                 tr.className = rowIndicatorClass;
@@ -512,12 +522,12 @@
             let rsk = parseFloat(t.risk) || 0;
             document.getElementById('editRisk').value = rsk.toFixed(2);
             
+            // Унифицированное приведение типов для совместимости с прошлыми записями
             let normType = 'be';
             if (t.resultType === 'win' || t.resultType === 'Выигрыш') normType = 'win';
             if (t.resultType === 'lose' || t.resultType === 'Проиграл' || t.resultType === 'Проиграш') normType = 'lose';
             
             document.getElementById('editResult').value = normType;
-            
             let chg = parseFloat(t.change) || 0;
             
             if (normType === 'win') {
@@ -533,7 +543,6 @@
             }
             
             document.getElementById('editComment').value = (t.comment === "—") ? "" : t.comment;
-            
             toggleEditResultInputs();
             
             document.getElementById('drawerOverlay').classList.add('open');
@@ -567,7 +576,8 @@
             };
 
             applyHistoryEffect(newChange - oldChange);
-            saveAndRefresh(); closeDrawer();
+            saveAndRefresh(); 
+            closeDrawer();
         }
 
         function deleteTrade(idx) {
@@ -580,7 +590,9 @@
 
         function clearHistory() {
             if(!confirm("Очистить весь журнал?")) return;
-            tradeHistory = []; localStorage.removeItem('tradeHistory'); renderHistory();
+            tradeHistory = []; 
+            localStorage.removeItem('tradeHistory'); 
+            renderHistory();
         }
     </script>
 </body>
