@@ -89,9 +89,12 @@
         .btn-clear { background-color: #f3f4f6; color: var(--danger); font-size: 0.85em; width: auto; margin: 0; padding: 6px 12px; }
         .btn-clear:hover { background-color: var(--danger-bg); }
         
+        /* Стили плашек обновлены: курсор и эффекты при наведении */
         .scenario-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
-        .scenario-card { background: var(--neutral-bg); padding: 14px; border-radius: var(--radius); border: 1px solid var(--border); text-align: center; transition: all 0.2s; }
-        .scenario-card.active { border-color: var(--primary); background: #f5f3ff; }
+        .scenario-card { background: var(--neutral-bg); padding: 14px; border-radius: var(--radius); border: 1px solid var(--border); text-align: center; transition: all 0.2s; cursor: pointer; user-select: none; }
+        .scenario-card:hover { border-color: #cbd5e1; background: #f8fafc; transform: translateY(-1px); }
+        .scenario-card.active { border-color: var(--primary); background: #f5f3ff; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.1); }
+        .scenario-card.active:hover { background: #f5f3ff; }
         .scenario-card .sc-title { font-size: 0.8em; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
         .scenario-card .sc-value { font-size: 1.4em; font-weight: 700; color: var(--primary); margin-top: 4px; }
         .scenario-card .sc-sub { font-size: 0.8em; color: var(--neutral); margin-top: 2px; }
@@ -245,12 +248,12 @@
                 </button>
                 
                 <div class="scenario-cards" id="scenarioWrapper" style="display: none;">
-                    <div class="scenario-card" id="cardSc1">
+                    <div class="scenario-card active" id="cardSc1" onclick="selectScenario(1)">
                         <div class="sc-title">Вариант 1</div>
                         <div class="sc-value" id="riskCard1">$0.00</div>
                         <div class="sc-sub" id="subCard1">на 4 сделки</div>
                     </div>
-                    <div class="scenario-card" id="cardSc2">
+                    <div class="scenario-card" id="cardSc2" onclick="selectScenario(2)">
                         <div class="sc-title">Вариант 2</div>
                         <div class="sc-value" id="riskCard2">$0.00</div>
                         <div class="sc-sub" id="subCard2">на 6 сделок</div>
@@ -259,13 +262,6 @@
 
                 <h3>Новая сделка</h3>
                 <div class="flex-container">
-                    <div class="flex-child">
-                        <label for="chosenScenario">Подставить риск из</label>
-                        <select id="chosenScenario" onchange="updateActualRiskInput()">
-                            <option value="1">Сценария 1</option>
-                            <option value="2">Сценария 2</option>
-                        </select>
-                    </div>
                     <div class="flex-child">
                         <label for="actualRisk">Фактический риск ($)</label>
                         <input type="number" id="actualRisk" value="0" step="0.01">
@@ -348,6 +344,7 @@
 
     <script>
         let calcRisk1 = 0; let calcRisk2 = 0; let tradeHistory = [];
+        let currentScenario = 1; // Переменная для хранения выбранного сценария (1 или 2)
 
         window.onload = function() {
             ['accountType', 'accountBalance', 'drawdownLeft', 'maxDrawdown', 'trades1', 'trades2'].forEach(key => {
@@ -395,9 +392,16 @@
             document.getElementById('editBEBox').style.display = (res === 'be' ? 'block' : 'none');
         }
 
+        // Выбор сценария по клику на карточку
+        function selectScenario(scNum) {
+            currentScenario = scNum;
+            document.querySelectorAll('.scenario-card').forEach(card => card.classList.remove('active'));
+            document.getElementById(`cardSc${scNum}`).classList.add('active');
+            updateActualRiskInput();
+        }
+
         function updateActualRiskInput() {
-            let sc = document.getElementById('chosenScenario').value;
-            document.getElementById('actualRisk').value = (sc === "1" ? calcRisk1.toFixed(2) : calcRisk2.toFixed(2));
+            document.getElementById('actualRisk').value = (currentScenario === 1 ? calcRisk1.toFixed(2) : calcRisk2.toFixed(2));
         }
 
         function calculateRiskOnly() {
@@ -438,7 +442,7 @@
             let trade = {
                 time: new Date().toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}),
                 risk: risk.toFixed(2),
-                resultType: res, // Всегда строго 'win', 'lose', 'be'
+                resultType: res,
                 rr: res === 'win' ? rrValue : '',
                 change: change.toFixed(2),
                 comment: document.getElementById('tradeComment').value.trim() || "—"
@@ -522,7 +526,6 @@
             let rsk = parseFloat(t.risk) || 0;
             document.getElementById('editRisk').value = rsk.toFixed(2);
             
-            // Унифицированное приведение типов для совместимости с прошлыми записями
             let normType = 'be';
             if (t.resultType === 'win' || t.resultType === 'Выигрыш') normType = 'win';
             if (t.resultType === 'lose' || t.resultType === 'Проиграл' || t.resultType === 'Проиграш') normType = 'lose';
